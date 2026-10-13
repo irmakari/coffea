@@ -1,0 +1,68 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { colors, sizes, spacing } from '@/theme';
+
+import { Icon } from './Icon';
+import { Text } from './Text';
+
+type ListRowProps = {
+  label: string;
+  value?: string;
+  // Makes the row a button and adds a chevron.
+  onPress?: () => void;
+};
+
+export function ListRow({ label, value, onPress }: ListRowProps) {
+  const content = (
+    <>
+      <Text>{label}</Text>
+      <View style={styles.trailing}>
+        {value ? <Text color="textMuted">{value}</Text> : null}
+        {onPress ? <Icon name="chevronRight" size={16} color="textMuted" /> : null}
+      </View>
+    </>
+  );
+
+  if (!onPress) return <View style={styles.row}>{content}</View>;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      {content}
+    </Pressable>
+  );
+}
+
+export function SectionHeader({ title }: { title: string }) {
+  return (
+    <Text variant="eyebrow" color="textMuted" accessibilityRole="header" style={styles.section}>
+      {title}
+    </Text>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    borderBottomWidth: sizes.hairline,
+    borderBottomColor: colors.border,
+  },
+  trailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  section: {
+    marginBottom: spacing.sm,
+  },
+});
