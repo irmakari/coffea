@@ -1,0 +1,140 @@
+import { supabase } from '@/lib/supabase';
+
+import { createPhotoLinks, isLocalPhoto, removePhoto, uploadPhoto } from './photoStorage';
+import { parsePrice, type Entry, type EntryDraft } from './types';
+
+const COLUMNS =
+  'id, coffee_name, coffee_type, cafe_name, photo_path, consumed_at, price, currency, rating, notes, is_favorite';
+
+type EntryRow = {
+  id: string;
+  coffee_name: string;
+  coffee_type: string | null;
+  cafe_name: string | null;
+  photo_path: string | null;
+  consumed_at: string;
+  price: number | string | null;
+  currency: string | null;
+  rating: number | null;
+  notes: string | null;
+  is_favorite: boolean;
+};
+
+function toEntry(row: EntryRow, photoUrl: string | null): Entry {
+  return {
+    id: row.id,
+    name: row.coffee_name,
+    type: row.coffee_type,
+    cafe: row.cafe_name,
+    photoPath: row.photo_path,
+    photoUrl,
+    consumedAt: row.consumed_at,
+    // The API may send a decimal column as text; the app always works in numbers.
+    price: row.price === null ? null : Number(row.price),
+    currency: row.currency,
+    rating: row.rating,
+    notes: row.notes,
+    isFavorite: row.is_favorite,
+  };
+}
+
+function blankToNull(value: string) {
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+// The optional fields a draft maps onto. A predefined type is stored by its
+// key so it can be translated; "other" stores the user's own words.
+function fieldsFromDraft(draft: EntryDraft) {
+  const price = parsePrice(draft.price);
+  if (Number.isNaN(price)) throw new Error('Invalid price');
+
+  return {
+    coffee_name: draft.name.trim(),
+    coffee_type: draft.type === 'other' ? (blankToNull(draft.customType) ?? 'other') : draft.type,
+    cafe_name: blankToNull(draft.cafe),
+    rating: draft.rating,
+    price,
+    // A currency is only meaningful beside a price.
+    currency: price === null ? null : draft.currency,
+    notes: blankToNull(draft.notes),
+    // Left out when unset so the database stamps the entry with "now".
+    ...(draft.consumedAt ? { consumed_at: draft.consumedAt } : {}),
+  };
+}
+
+// A photo that was just picked is shown from the device, so it appears at
+// once instead of waiting for the upload to be fetched back.
+async function withPhotoLink(row: EntryRow, localUri?: string | null): Promise<Entry> {
+  if (!row.photo_path) return toEntry(row, null);
+  if (localUri) return toEntry(row, localUri);
+  const links = await createPhotoLinks([row.photo_path]);
+  return toEntry(row, links.get(row.photo_path) ?? null);
+}
+
+// Newest first. Row Level Security limits this to the signed-in user's rows.
+export async function fetchEntries(): Promise<Entry[]> {
+  const { data, error } = await supabase
+    .from('coffee_entries')
+    .select(COLUMNS)
+    .order('consumed_at', { ascending: false })
+    .returns<EntryRow[]>();
+  if (error) throw error;
+
+  const paths = data.flatMap((row) => (row.photo_path ? [row.photo_path] : []));
+  const links = await createPhotoLinks(paths);
+  return data.map((row) => toEntry(row, row.photo_path ? (links.get(row.photo_path) ?? null) : null));
+}
+
+export async function createEntry(userId: string, draft: EntryDraft): Promise<Entry> {
+  const photoPath = isLocalPhoto(draft.photoUri) ? await uploadPhoto(userId, draft.photoUri) : null;
+
+  const { data, error } = await supabase
+    .from('coffee_entries')
+    .insert({ ...fieldsFromDraft(draft), photo_path: photoPath })
+    .select(COLUMNS)
+    .single<EntryRow>();
+  if (error) {
+    if (photoPath) await removePhoto(photoPath);
+    throw error;
+  }
+  return withPhotoLink(data, draft.photoUri);
+}
+
+export async function updateEntry(userId: string, entry: Entry, draft: EntryDraft): Promise<Entry> {
+  // The photo is replaced when a new file was picked, cleared when it was
+  // removed in the form, and otherwise left alone.
+  let photoPath = entry.photoPath;
+  const pickedNewPhoto = isLocalPhoto(draft.photoUri) && draft.photoUri !== entry.photoUrl;
+  if (pickedNewPhoto) {
+    photoPath = await uploadPhoto(userId, draft.photoUri as string);
+  } else if (draft.photoUri === null) {
+    photoPath = null;
+  }
+
+  const { data, error } = await supabase
+    .from('coffee_entries')
+    .update({ ...fieldsFromDraft(draft), photo_path: photoPath })
+    .eq('id', entry.id)
+    .select(COLUMNS)
+    .single<EntryRow>();
+  if (error) {
+    if (photoPath && photoPath !== entry.photoPath) await removePhoto(photoPath);
+    throw error;
+  }
+
+  if (entry.photoPath && entry.photoPath !== photoPath) await removePhoto(entry.photoPath);
+  // Keep showing whatever the form was showing; it is the same picture.
+  return withPhotoLink(data, draft.photoUri);
+}
+
+export async function setEntryFavorite(id: string, isFavorite: boolean): Promise<void> {
+  const { error } = await supabase.from('coffee_entries').update({ is_favorite: isFavorite }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteEntry(entry: Entry): Promise<void> {
+  const { error } = await supabase.from('coffee_entries').delete().eq('id', entry.id);
+  if (error) throw error;
+  if (entry.photoPath) await removePhoto(entry.photoPath);
+}
