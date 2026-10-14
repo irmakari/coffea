@@ -14,6 +14,12 @@ export const en = {
       body: 'Check your connection and try again.',
     },
     optional: 'Optional',
+    discard: {
+      title: 'Discard changes?',
+      body: 'What you changed here has not been saved.',
+      keep: 'Keep editing',
+      confirm: 'Discard',
+    },
   },
   tabs: {
     home: 'Home',
@@ -24,8 +30,14 @@ export const en = {
   },
   quickLog: {
     title: 'Quick log',
-    body: 'Pick a coffee to start with.',
+    body: 'Pick a coffee and the form opens filled in.',
     hint: 'Hold to pick a coffee.',
+    tip: 'Hold the cup to pick a coffee',
+    replace: {
+      title: 'Start over?',
+      body: 'The coffee you started will be replaced.',
+      confirm: 'Start over',
+    },
   },
   home: {
     greeting: {
@@ -59,6 +71,8 @@ export const en = {
       other: '{{count}} coffees',
     },
     dayCoffees: '{{count}} on {{day}}',
+    logOn: 'Log a coffee on {{day}}',
+    logOnThisDay: 'Log another coffee on this day',
     empty: {
       title: 'Nothing here yet',
       body: 'Every coffee you log is kept here, newest first.',
@@ -86,6 +100,18 @@ export const en = {
       fiveStars: 'Give a coffee five stars and it is kept here.',
       other: 'Coffees you log will show up here.',
     },
+  },
+  search: {
+    open: 'Search your journal',
+    placeholder: 'Name, café, type or notes',
+    clear: 'Clear search',
+    hint: 'Find any coffee by its name, café, type or notes.',
+    none: 'Nothing matches “{{query}}”.',
+    count: {
+      one: '1 coffee',
+      other: '{{count}} coffees',
+    },
+    more: 'Showing the newest {{count}}. Keep typing to narrow it down.',
   },
   share: {
     title: 'Share',
@@ -141,6 +167,12 @@ export const en = {
       notFound: 'This is no longer on your list.',
     },
     updateError: 'That change did not save. Please try again.',
+    log: {
+      title: 'Log it too?',
+      body: 'Add {{name}} to your journal while it is fresh.',
+      confirm: 'Log it',
+      later: 'Not now',
+    },
   },
   auth: {
     email: {
@@ -151,6 +183,10 @@ export const en = {
     password: {
       label: 'Password',
       required: 'Enter your password.',
+      show: 'Show',
+      hide: 'Hide',
+      showLabel: 'Show password',
+      hideLabel: 'Hide password',
       tooShort: 'Use at least {{count}} characters.',
     },
     name: {
@@ -188,6 +224,7 @@ export const en = {
       newPassword: 'New password',
       save: 'Save new password',
       resend: 'Send a new code',
+      changeEmail: 'Use a different email',
       switchPrompt: 'Remembered it?',
     },
     signOut: 'Sign out',
@@ -208,7 +245,7 @@ export const en = {
   profile: {
     title: 'Profile',
     journal: 'Journal',
-    stats: 'Your coffee in numbers',
+    stats: 'Statistics',
     currency: 'Currency',
     cup: 'Tab bar cup',
     account: 'Account',
@@ -218,6 +255,16 @@ export const en = {
     photoError: 'Your photo could not be updated. Please try again.',
     about: 'About',
     version: 'Version',
+    signOut: {
+      title: 'Sign out of Coffea?',
+    },
+    delete: {
+      action: 'Delete account',
+      title: 'Delete your account?',
+      body: 'Your journal, photos and bucket list are removed for good. This cannot be undone.',
+      confirm: 'Delete account',
+      error: 'Your account could not be deleted. Check your connection and try again.',
+    },
   },
   stats: {
     title: 'In numbers',
@@ -299,7 +346,7 @@ export const en = {
         other: '{{count}} fewer than this time last month',
       },
       same: 'Level with this time last month',
-      open: 'See all your numbers',
+      open: 'See all statistics',
     },
     streak: {
       title: 'Streak',
@@ -355,6 +402,7 @@ export const en = {
     favorite: {
       add: 'Add to favorites',
       remove: 'Remove from favorites',
+      error: 'That did not save. Please try again.',
     },
     delete: {
       action: 'Delete this coffee',
@@ -368,8 +416,12 @@ export const en = {
       add: 'Add a photo',
       change: 'Change photo',
       remove: 'Remove photo',
+      take: 'Take a photo',
+      library: 'Choose from library',
       fallback: 'Or keep this drawing',
       error: 'Your photos could not be opened. Please try again.',
+      cameraError: 'The camera could not be opened. Please try again.',
+      cameraDenied: 'Coffea is not allowed to use the camera. Allow it in Settings and try again.',
     },
     name: {
       label: 'Coffee',
@@ -410,6 +462,7 @@ export const en = {
       label: 'Price',
       placeholder: '0.00',
       invalid: 'Enter an amount, like 4.50.',
+      currency: 'Currency',
     },
     date: {
       label: 'When',

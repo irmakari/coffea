@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { TextInput } from 'react-native';
 
 import { Button, Text, TextField } from '@/components/ui';
 import { AuthScreen } from '@/features/auth/AuthScreen';
 import { isValidEmail, MIN_PASSWORD_LENGTH, signUp } from '@/features/auth/authApi';
+import { PasswordField } from '@/features/auth/PasswordField';
 import { t } from '@/i18n';
 
 export default function SignUpScreen() {
@@ -14,6 +16,8 @@ export default function SignUpScreen() {
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const emailField = useRef<TextInput>(null);
+  const passwordField = useRef<TextInput>(null);
 
   const emailError = isValidEmail(email) ? undefined : t('auth.email.invalid');
   const passwordError =
@@ -66,8 +70,11 @@ export default function SignUpScreen() {
         autoComplete="given-name"
         maxLength={60}
         returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => emailField.current?.focus()}
       />
       <TextField
+        ref={emailField}
         label={t('auth.email.label')}
         placeholder={t('auth.email.placeholder')}
         value={email}
@@ -79,13 +86,15 @@ export default function SignUpScreen() {
         textContentType="username"
         autoComplete="email"
         returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordField.current?.focus()}
       />
-      <TextField
+      <PasswordField
+        ref={passwordField}
         label={t('auth.password.label')}
         value={password}
         onChangeText={setPassword}
         error={showErrors ? passwordError : undefined}
-        secureTextEntry
         textContentType="newPassword"
         autoComplete="new-password"
         returnKeyType="go"

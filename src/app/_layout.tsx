@@ -51,6 +51,7 @@ function RootNavigator() {
           <Stack.Screen name="entry/[id]/share" options={{ presentation: 'modal' }} />
           <Stack.Screen name="collection" />
           <Stack.Screen name="stats" />
+          <Stack.Screen name="search" />
           <Stack.Screen name="settings/currency" />
           <Stack.Screen name="settings/cup" />
           <Stack.Screen name="settings/name" options={{ presentation: 'modal' }} />

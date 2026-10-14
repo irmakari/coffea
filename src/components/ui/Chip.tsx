@@ -10,6 +10,8 @@ type ChipProps = {
   onPress: () => void;
 };
 
+// An unselected chip is soft white, like every other control on the warm
+// page. Its hairline alone is too faint there to say it can be tapped.
 export function Chip({ label, selected, onPress }: ChipProps) {
   return (
     <Pressable
@@ -32,6 +34,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: sizes.hairline,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -40,7 +43,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   pressed: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfacePressed,
   },
   label: {
     fontSize: 14,

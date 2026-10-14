@@ -1,10 +1,11 @@
 import { Link } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, type TextInput } from 'react-native';
 
 import { Button, Text, TextField } from '@/components/ui';
 import { AuthScreen } from '@/features/auth/AuthScreen';
 import { isValidEmail, signIn } from '@/features/auth/authApi';
+import { PasswordField } from '@/features/auth/PasswordField';
 import { t } from '@/i18n';
 
 export default function SignInScreen() {
@@ -13,6 +14,7 @@ export default function SignInScreen() {
   const [showErrors, setShowErrors] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const passwordField = useRef<TextInput>(null);
 
   const emailError = isValidEmail(email) ? undefined : t('auth.email.invalid');
   const passwordError = password ? undefined : t('auth.password.required');
@@ -53,13 +55,15 @@ export default function SignInScreen() {
         textContentType="username"
         autoComplete="email"
         returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordField.current?.focus()}
       />
-      <TextField
+      <PasswordField
+        ref={passwordField}
         label={t('auth.password.label')}
         value={password}
         onChangeText={setPassword}
         error={showErrors ? passwordError : undefined}
-        secureTextEntry
         textContentType="password"
         autoComplete="current-password"
         returnKeyType="go"

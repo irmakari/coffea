@@ -62,6 +62,21 @@ export async function removePhoto(path: string): Promise<void> {
     .catch(() => {});
 }
 
+// Empties the user's folder, for an account that is being deleted. Unlike
+// `removePhoto` this reports failure: the account must not go while its
+// photos stay behind.
+export async function removeAllPhotos(userId: string): Promise<void> {
+  const bucket = supabase.storage.from(BUCKET);
+  // Each pass lists what is left, so there is no page to keep track of.
+  for (;;) {
+    const { data, error } = await bucket.list(userId, { limit: 100 });
+    if (error) throw error;
+    if (data.length === 0) return;
+    const { error: removeError } = await bucket.remove(data.map((file) => `${userId}/${file.name}`));
+    if (removeError) throw removeError;
+  }
+}
+
 // The bucket is private, so photos are shown through short-lived links.
 export async function createPhotoLinks(paths: string[]): Promise<Map<string, string>> {
   const links = new Map<string, string>();

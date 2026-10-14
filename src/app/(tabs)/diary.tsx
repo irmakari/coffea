@@ -1,6 +1,12 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -8,6 +14,7 @@ import {
   Card,
   CoffeePhoto,
   EmptyState,
+  Icon,
   IconButton,
   LoadingState,
   Screen,
@@ -17,6 +24,7 @@ import {
 } from "@/components/ui";
 import { useEntries } from "@/features/entries/EntriesProvider";
 import { EntryRow } from "@/features/entries/EntryCard";
+import { startLog } from "@/features/entries/logDraft";
 import { MonthCalendar } from "@/features/entries/MonthCalendar";
 import type { Entry } from "@/features/entries/types";
 import { formatDate, formatNumber, t } from "@/i18n";
@@ -109,6 +117,9 @@ export default function DiaryScreen() {
     setRefreshing(false);
   };
 
+  const logOn = (day: number) =>
+    startLog({ day: new Date(month.getFullYear(), month.getMonth(), day) });
+
   const shown =
     selectedDay === null ? monthEntries : (entriesByDay.get(selectedDay) ?? []);
   const listTitle =
@@ -165,12 +176,23 @@ export default function DiaryScreen() {
           </View>
         </View>
 
+        <Pressable
+          accessibilityRole="search"
+          accessibilityLabel={t("search.open")}
+          onPress={() => router.push("/search")}
+          style={({ pressed }) => [styles.search, pressed && styles.pressed]}
+        >
+          <Icon name="search" size={18} color="textMuted" />
+          <Text color="textMuted">{t("search.open")}</Text>
+        </Pressable>
+
         <Card style={styles.calendarCard}>
           <MonthCalendar
             month={month}
             entriesByDay={entriesByDay}
             selectedDay={selectedDay}
             onSelectDay={setSelectedDay}
+            onLogDay={logOn}
           />
         </Card>
 
@@ -186,6 +208,14 @@ export default function DiaryScreen() {
                 />
               ))}
             </Card>
+          ) : null}
+          {selectedDay !== null ? (
+            <Button
+              variant="quiet"
+              label={t("diary.logOnThisDay")}
+              onPress={() => logOn(selectedDay)}
+              style={styles.logOn}
+            />
           ) : null}
         </View>
       </ScrollView>
@@ -228,8 +258,25 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.35,
   },
+  // Looks like the field it leads to.
+  search: {
+    minHeight: sizes.control,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.control,
+    backgroundColor: colors.surface,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  logOn: {
+    marginTop: spacing.xs,
+  },
   calendarCard: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     padding: spacing.lg,
   },
   list: {

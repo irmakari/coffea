@@ -28,6 +28,12 @@ const glyphs = {
     </>
   ),
   close: <Path d="M18 6 6 18M6 6l12 12" />,
+  search: (
+    <>
+      <Circle cx={11} cy={11} r={7} />
+      <Path d="m20 20-4-4" />
+    </>
+  ),
   check: <Path d="m5 12.5 4.5 4.5L19 7.5" />,
   share: (
     <>

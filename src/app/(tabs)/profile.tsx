@@ -1,7 +1,13 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import {
   Avatar,
@@ -12,33 +18,72 @@ import {
   SectionHeader,
   Text,
 } from "@/components/ui";
-import { signOut } from "@/features/auth/authApi";
+import { deleteAccount, signOut } from "@/features/auth/authApi";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { pickPhoto } from "@/features/entries/pickPhoto";
+import { askPhotoSource } from "@/features/entries/askPhotoSource";
+import {
+  CameraDeniedError,
+  pickPhoto,
+  type PhotoSource,
+} from "@/features/entries/pickPhoto";
 import { isCoffeeType } from "@/features/entries/types";
 import { AVATAR_SIZE, useProfile } from "@/features/profile/ProfileProvider";
 import { useTabCup } from "@/features/profile/tabCup";
 import { t } from "@/i18n";
-import { spacing } from "@/theme";
+import { colors, spacing } from "@/theme";
 
 export default function ProfileScreen() {
   const { session } = useAuth();
-  const { profile, setAvatar } = useProfile();
+  const { profile, setAvatar, removeAvatar } = useProfile();
   const cup = useTabCup();
   const [signingOut, setSigningOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
   const version = Constants.expoConfig?.version;
   const email = session?.user.email;
 
-  const changePhoto = async () => {
+  // From choosing a photo until it has been stored, or taken away.
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  const pickAvatar = async (source: PhotoSource) => {
     setFailure(null);
+    setPhotoBusy(true);
     try {
-      const picked = await pickPhoto(AVATAR_SIZE);
+      const picked = await pickPhoto(AVATAR_SIZE, source);
       if (picked) await setAvatar(picked);
+    } catch (error) {
+      setFailure(
+        t(
+          error instanceof CameraDeniedError
+            ? "entry.photo.cameraDenied"
+            : "profile.photoError",
+        ),
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const clearAvatar = async () => {
+    setFailure(null);
+    setPhotoBusy(true);
+    try {
+      await removeAvatar();
     } catch {
       setFailure(t("profile.photoError"));
+    } finally {
+      setPhotoBusy(false);
     }
+  };
+
+  const changePhoto = () => {
+    if (photoBusy) return;
+    askPhotoSource(
+      t("profile.changePhoto"),
+      pickAvatar,
+      profile.avatarPath ? clearAvatar : undefined,
+    );
   };
 
   const handleSignOut = async () => {
@@ -52,21 +97,60 @@ export default function ProfileScreen() {
     }
   };
 
+  const confirmSignOut = () => {
+    Alert.alert(t("profile.signOut.title"), undefined, [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("auth.signOut"), onPress: handleSignOut },
+    ]);
+  };
+
+  const handleDelete = async () => {
+    const userId = session?.user.id;
+    if (!userId) return;
+    setFailure(null);
+    setDeleting(true);
+    const result = await deleteAccount(userId);
+    // On success this screen is replaced by sign-in, as with signing out.
+    if (!result.ok) {
+      setFailure(t(result.message));
+      setDeleting(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(t("profile.delete.title"), t("profile.delete.body"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("profile.delete.confirm"),
+        style: "destructive",
+        onPress: handleDelete,
+      },
+    ]);
+  };
+
   return (
     <Screen scroll>
       <View style={styles.identity}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("profile.changePhoto")}
+          accessibilityState={{ busy: photoBusy }}
           onPress={changePhoto}
           style={({ pressed }) => pressed && styles.pressed}
         >
-          <Avatar
-            uri={profile.avatarUrl}
-            cacheKey={profile.avatarPath}
-            name={profile.displayName}
-            size={84}
-          />
+          <View style={photoBusy && styles.avatarBusy}>
+            <Avatar
+              uri={profile.avatarUrl}
+              cacheKey={profile.avatarPath}
+              name={profile.displayName}
+              size={84}
+            />
+          </View>
+          {photoBusy ? (
+            <View style={styles.avatarSpinner}>
+              <ActivityIndicator color={colors.text} />
+            </View>
+          ) : null}
         </Pressable>
         <View style={styles.identityText}>
           <Text variant="title" accessibilityRole="header" numberOfLines={2}>
@@ -148,7 +232,15 @@ export default function ProfileScreen() {
           variant="secondary"
           label={t("auth.signOut")}
           loading={signingOut}
-          onPress={handleSignOut}
+          disabled={deleting}
+          onPress={confirmSignOut}
+        />
+        <Button
+          variant="quiet"
+          label={t("profile.delete.action")}
+          loading={deleting}
+          disabled={signingOut}
+          onPress={confirmDelete}
         />
       </View>
     </Screen>
@@ -169,6 +261,14 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
+  avatarBusy: {
+    opacity: 0.4,
+  },
+  avatarSpinner: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   failure: {
     marginTop: spacing.lg,
   },
@@ -185,5 +285,6 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: spacing.xxxl,
+    gap: spacing.sm,
   },
 });

@@ -132,12 +132,13 @@ export function emptyDraft(currency: string): EntryDraft {
   };
 }
 
-// Accepts "4.5" and "4,5". Resolves to null for an empty field and to NaN
-// for anything that is not a sensible amount.
+// Accepts "4.5" and "4,5", and "4." on the way to either, so the field does
+// not complain halfway through an amount. Resolves to null for an empty
+// field and to NaN for anything that is not a sensible amount.
 export function parsePrice(text: string): number | null {
   const trimmed = text.trim();
   if (trimmed === '') return null;
-  if (!/^\d{1,7}([.,]\d{1,2})?$/.test(trimmed)) return NaN;
+  if (!/^\d{1,7}([.,]\d{0,2})?$/.test(trimmed)) return NaN;
   return Number(trimmed.replace(',', '.'));
 }
 

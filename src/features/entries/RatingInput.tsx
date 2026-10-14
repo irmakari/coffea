@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui';
 import { t } from '@/i18n';
+import { tapFeedback } from '@/lib/haptics';
 import { sizes } from '@/theme';
 
 import { MAX_RATING } from './types';
@@ -25,7 +26,10 @@ export function RatingInput({ value, onChange }: RatingInputProps) {
             accessibilityRole="button"
             accessibilityLabel={t('entry.rating.value', { count: step })}
             accessibilityState={{ selected: value === step }}
-            onPress={() => onChange(value === step ? null : step)}
+            onPress={() => {
+              tapFeedback();
+              onChange(value === step ? null : step);
+            }}
             style={styles.step}
           >
             <Icon name="star" size={26} color={active ? 'text' : 'placeholder'} filled={active} strokeWidth={1.25} />

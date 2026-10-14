@@ -111,23 +111,27 @@ export function MonthCard({ entries }: { entries: Entry[] }) {
         </View>
       ) : null}
 
-      {stats.topCafe || versus ? (
-        <View style={styles.footer}>
-          <View style={styles.footerText}>
-            {stats.topCafe ? (
-              <Text variant="small" numberOfLines={1}>
-                {t('stats.month.topCafe', { cafe: stats.topCafe.label })}
-              </Text>
-            ) : null}
-            {versus ? (
-              <Text variant="small" color="accentPressed">
-                {versus}
-              </Text>
-            ) : null}
-          </View>
-          <Icon name="chevronRight" size={16} color="accentPressed" />
+      {/* Always there, so the card always shows that it opens something. */}
+      <View style={styles.footer}>
+        <View style={styles.footerText}>
+          {!stats.topCafe && !versus ? (
+            <Text variant="small" color="accentPressed">
+              {t('stats.month.open')}
+            </Text>
+          ) : null}
+          {stats.topCafe ? (
+            <Text variant="small" numberOfLines={1}>
+              {t('stats.month.topCafe', { cafe: stats.topCafe.label })}
+            </Text>
+          ) : null}
+          {versus ? (
+            <Text variant="small" color="accentPressed">
+              {versus}
+            </Text>
+          ) : null}
         </View>
-      ) : null}
+        <Icon name="chevronRight" size={16} color="accentPressed" />
+      </View>
     </Pressable>
   );
 }

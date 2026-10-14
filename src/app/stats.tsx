@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Card, Chip, CoffeePhoto, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
@@ -152,13 +153,20 @@ export default function StatsScreen() {
                   contentContainerStyle={styles.shelf}
                 >
                   {withPhoto.map((entry) => (
-                    <CoffeePhoto
+                    <Pressable
                       key={entry.id}
-                      uri={entry.photoUrl}
-                      cacheKey={entry.photoPath}
-                      ratio="portrait"
-                      style={styles.shelfPhoto}
-                    />
+                      accessibilityRole="button"
+                      accessibilityLabel={entry.name}
+                      onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}
+                      style={({ pressed }) => pressed && styles.pressed}
+                    >
+                      <CoffeePhoto
+                        uri={entry.photoUrl}
+                        cacheKey={entry.photoPath}
+                        ratio="portrait"
+                        style={styles.shelfPhoto}
+                      />
+                    </Pressable>
                   ))}
                 </ScrollView>
               </Card>
@@ -187,6 +195,9 @@ const styles = StyleSheet.create({
   shelfPhoto: {
     width: 76,
     borderRadius: 16,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   pair: {
     flexDirection: 'row',

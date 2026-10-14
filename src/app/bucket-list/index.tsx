@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   Button,
@@ -15,7 +15,9 @@ import {
 } from '@/components/ui';
 import type { BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
+import { startLog } from '@/features/entries/logDraft';
 import { t } from '@/i18n';
+import { tapFeedback } from '@/lib/haptics';
 import { colors, radii, sizes, spacing } from '@/theme';
 
 function openItem(id?: string) {
@@ -64,10 +66,23 @@ export default function BucketListScreen() {
   const toTry = items.filter((item) => !item.isCompleted);
   const tried = items.filter((item) => item.isCompleted);
 
+  // A coffee that has just been tried is one worth writing down.
+  const offerToLog = (item: BucketItem) => {
+    Alert.alert(t('bucketList.log.title'), t('bucketList.log.body', { name: item.name }), [
+      { text: t('bucketList.log.later'), style: 'cancel' },
+      {
+        text: t('bucketList.log.confirm'),
+        onPress: () => startLog({ name: item.name, cafe: item.cafe ?? undefined }),
+      },
+    ]);
+  };
+
   const toggle = async (item: BucketItem) => {
     setFailure(null);
+    tapFeedback();
     try {
       await toggleCompleted(item);
+      if (!item.isCompleted) offerToLog(item);
     } catch {
       setFailure(t('bucketList.updateError'));
     }
