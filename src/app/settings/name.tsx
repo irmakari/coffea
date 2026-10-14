@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, ModalHeader, Screen, Text, TextField } from '@/components/ui';
+import { Button, KeyboardAvoider, ModalHeader, Screen, Text, TextField } from '@/components/ui';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
 import { spacing } from '@/theme';
@@ -30,7 +30,7 @@ export default function NameScreen() {
   return (
     <Screen padded={false} edges={['top']}>
       <ModalHeader title={t('settings.name.title')} />
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoider>
         <View style={styles.content}>
           <TextField
             label={t('auth.name.label')}
@@ -52,15 +52,12 @@ export default function NameScreen() {
           ) : null}
           <Button label={t('settings.name.save')} loading={saving} onPress={save} />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   content: {
     flex: 1,
     paddingHorizontal: spacing.screen,

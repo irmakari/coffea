@@ -15,13 +15,16 @@ import {
 import { signOut } from "@/features/auth/authApi";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { pickPhoto } from "@/features/entries/pickPhoto";
-import { useProfile } from "@/features/profile/ProfileProvider";
+import { isCoffeeType } from "@/features/entries/types";
+import { AVATAR_SIZE, useProfile } from "@/features/profile/ProfileProvider";
+import { useTabCup } from "@/features/profile/tabCup";
 import { t } from "@/i18n";
 import { spacing } from "@/theme";
 
 export default function ProfileScreen() {
   const { session } = useAuth();
   const { profile, setAvatar } = useProfile();
+  const cup = useTabCup();
   const [signingOut, setSigningOut] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -31,7 +34,7 @@ export default function ProfileScreen() {
   const changePhoto = async () => {
     setFailure(null);
     try {
-      const picked = await pickPhoto();
+      const picked = await pickPhoto(AVATAR_SIZE);
       if (picked) await setAvatar(picked);
     } catch {
       setFailure(t("profile.photoError"));
@@ -100,6 +103,15 @@ export default function ProfileScreen() {
               label={t("profile.currency")}
               value={profile.preferredCurrency}
               onPress={() => router.push("/settings/currency")}
+            />
+            <ListRow
+              label={t("profile.cup")}
+              value={
+                isCoffeeType(cup)
+                  ? t(`coffeeTypes.${cup}`)
+                  : t("settings.cup.classic")
+              }
+              onPress={() => router.push("/settings/cup")}
             />
           </View>
         </Card>

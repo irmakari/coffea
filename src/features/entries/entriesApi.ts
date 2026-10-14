@@ -1,15 +1,16 @@
 import { supabase } from '@/lib/supabase';
 
-import { createPhotoLinks, isLocalPhoto, removePhoto, uploadPhoto } from './photoStorage';
-import { parsePrice, type Entry, type EntryDraft } from './types';
+import { createPhotoLinks, finishUpload, isLocalPhoto, removePhoto } from './photoStorage';
+import { parsePrice, recognizeType, takesMilk, type Entry, type EntryDraft } from './types';
 
 const COLUMNS =
-  'id, coffee_name, coffee_type, cafe_name, photo_path, consumed_at, price, currency, rating, notes, is_favorite';
+  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, consumed_at, price, currency, rating, notes, is_favorite';
 
 type EntryRow = {
   id: string;
   coffee_name: string;
   coffee_type: string | null;
+  milk: string | null;
   cafe_name: string | null;
   photo_path: string | null;
   consumed_at: string;
@@ -24,7 +25,8 @@ function toEntry(row: EntryRow, photoUrl: string | null): Entry {
   return {
     id: row.id,
     name: row.coffee_name,
-    type: row.coffee_type,
+    type: recognizeType(row.coffee_type),
+    milk: row.milk,
     cafe: row.cafe_name,
     photoPath: row.photo_path,
     photoUrl,
@@ -51,7 +53,9 @@ function fieldsFromDraft(draft: EntryDraft) {
 
   return {
     coffee_name: draft.name.trim(),
-    coffee_type: draft.type === 'other' ? (blankToNull(draft.customType) ?? 'other') : draft.type,
+    coffee_type: draft.type === 'other' ? (recognizeType(blankToNull(draft.customType)) ?? 'other') : draft.type,
+    // A milk chosen before switching to a type without any is dropped.
+    milk: takesMilk(draft.type) ? draft.milk : null,
     cafe_name: blankToNull(draft.cafe),
     rating: draft.rating,
     price,
@@ -87,7 +91,7 @@ export async function fetchEntries(): Promise<Entry[]> {
 }
 
 export async function createEntry(userId: string, draft: EntryDraft): Promise<Entry> {
-  const photoPath = isLocalPhoto(draft.photoUri) ? await uploadPhoto(userId, draft.photoUri) : null;
+  const photoPath = isLocalPhoto(draft.photoUri) ? await finishUpload(userId, draft.photoUri) : null;
 
   const { data, error } = await supabase
     .from('coffee_entries')
@@ -107,7 +111,7 @@ export async function updateEntry(userId: string, entry: Entry, draft: EntryDraf
   let photoPath = entry.photoPath;
   const pickedNewPhoto = isLocalPhoto(draft.photoUri) && draft.photoUri !== entry.photoUrl;
   if (pickedNewPhoto) {
-    photoPath = await uploadPhoto(userId, draft.photoUri as string);
+    photoPath = await finishUpload(userId, draft.photoUri as string);
   } else if (draft.photoUri === null) {
     photoPath = null;
   }

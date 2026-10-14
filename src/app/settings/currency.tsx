@@ -1,8 +1,7 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Icon, IconButton, Screen, ScreenHeader, Text } from '@/components/ui';
+import { Icon, PageHeader, Screen, Text } from '@/components/ui';
 import { currencies } from '@/features/profile/currencies';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
@@ -23,10 +22,7 @@ export default function CurrencyScreen() {
 
   return (
     <Screen scroll edges={['top', 'bottom']}>
-      <View style={styles.back}>
-        <IconButton icon="chevronLeft" label={t('common.back')} onPress={() => router.back()} />
-      </View>
-      <ScreenHeader title={t('settings.currency.title')} subtitle={t('settings.currency.body')} />
+      <PageHeader padded={false} title={t('settings.currency.title')} subtitle={t('settings.currency.body')} />
 
       {failure ? (
         <Text variant="small" color="danger" accessibilityLiveRegion="polite" style={styles.failure}>
@@ -61,9 +57,6 @@ export default function CurrencyScreen() {
 }
 
 const styles = StyleSheet.create({
-  back: {
-    marginBottom: spacing.lg,
-  },
   failure: {
     marginTop: spacing.lg,
   },

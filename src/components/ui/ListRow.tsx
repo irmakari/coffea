@@ -15,9 +15,13 @@ type ListRowProps = {
 export function ListRow({ label, value, onPress }: ListRowProps) {
   const content = (
     <>
-      <Text>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
       <View style={styles.trailing}>
-        {value ? <Text color="textMuted">{value}</Text> : null}
+        {value ? (
+          <Text color="textMuted" numberOfLines={1} style={styles.value}>
+            {value}
+          </Text>
+        ) : null}
         {onPress ? <Icon name="chevronRight" size={16} color="textMuted" /> : null}
       </View>
     </>
@@ -54,10 +58,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: sizes.hairline,
     borderBottomColor: colors.border,
   },
+  // A long value gives way first; the label always shows in full.
+  label: {
+    flexShrink: 0,
+  },
   trailing: {
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  value: {
+    flexShrink: 1,
   },
   pressed: {
     opacity: 0.6,

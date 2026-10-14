@@ -10,7 +10,7 @@ import { Text } from './Text';
 export function ModalHeader({ title }: { title: string }) {
   return (
     <View style={styles.header}>
-      <Text variant="title" accessibilityRole="header">
+      <Text variant="title" accessibilityRole="header" numberOfLines={1} style={styles.title}>
         {title}
       </Text>
       <IconButton icon="close" label={t('common.close')} onPress={() => router.back()} />
@@ -26,5 +26,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
+    gap: spacing.lg,
+  },
+  title: {
+    flexShrink: 1,
   },
 });

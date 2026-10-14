@@ -15,7 +15,7 @@ import { useEntries } from "@/features/entries/EntriesProvider";
 import { EntryCard, EntryRow, EntryTile } from "@/features/entries/EntryCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
 import { formatDate, formatNumber, t, type TranslationKey } from "@/i18n";
-import { colors, radii, spacing } from "@/theme";
+import { colors, contentColumn, radii, spacing } from "@/theme";
 
 const EARLIER_COUNT = 3;
 const FAVORITES_COUNT = 8;
@@ -35,37 +35,41 @@ function Hero({ count }: { count: number }) {
 
   return (
     <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
-      <View style={styles.masthead}>
-        <Text variant="subheading">{t("brand.name")}</Text>
-        <Text variant="caption">{formatDate(now, "day")}</Text>
-      </View>
-
-      <View style={styles.heroBody}>
-        <View style={styles.heroText}>
-          <Text variant="display" accessibilityRole="header">
-            {profile.displayName
-              ? t("home.greetingWithName", {
-                  greeting,
-                  name: profile.displayName,
-                })
-              : greeting}
-          </Text>
-          <Text style={styles.heroLine}>
-            {count === 0
-              ? t("home.prompt")
-              : count === 1
-                ? t("home.summary.one")
-                : t("home.summary.other", { count: formatNumber(count) })}
-          </Text>
+      {/* Pulling the page down would otherwise open a pale gap above the tan. */}
+      <View style={styles.heroOverscroll} />
+      <View style={contentColumn}>
+        <View style={styles.masthead}>
+          <Text variant="subheading">{t("brand.name")}</Text>
+          <Text variant="caption">{formatDate(now, "day")}</Text>
         </View>
-        <CupMark size={92} />
-      </View>
 
-      <Button
-        label={t("home.logAction")}
-        onPress={() => router.push("/log")}
-        style={styles.heroAction}
-      />
+        <View style={styles.heroBody}>
+          <View style={styles.heroText}>
+            <Text variant="display" accessibilityRole="header">
+              {profile.displayName
+                ? t("home.greetingWithName", {
+                    greeting,
+                    name: profile.displayName,
+                  })
+                : greeting}
+            </Text>
+            <Text style={styles.heroLine}>
+              {count === 0
+                ? t("home.prompt")
+                : count === 1
+                  ? t("home.summary.one")
+                  : t("home.summary.other", { count: formatNumber(count) })}
+            </Text>
+          </View>
+          <CupMark size={92} />
+        </View>
+
+        <Button
+          label={t("home.logAction")}
+          onPress={() => router.push("/log")}
+          style={styles.heroAction}
+        />
+      </View>
     </View>
   );
 }
@@ -91,7 +95,7 @@ export default function HomeScreen() {
         <Hero count={entries.length} />
 
         {!latest ? (
-          <View style={styles.body}>
+          <View style={[contentColumn, styles.body]}>
             {status === "loading" ? (
               <LoadingState />
             ) : status === "error" ? (
@@ -114,7 +118,7 @@ export default function HomeScreen() {
             )}
           </View>
         ) : (
-          <View style={styles.body}>
+          <View style={[contentColumn, styles.body]}>
             <View>
               <SectionHeader title={t("home.latest")} />
               <EntryCard entry={latest} />
@@ -189,6 +193,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.highlight,
     borderBottomLeftRadius: radii.frame + 6,
     borderBottomRightRadius: radii.frame + 6,
+  },
+  heroOverscroll: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: "100%",
+    height: 600,
+    backgroundColor: colors.highlight,
   },
   masthead: {
     flexDirection: "row",

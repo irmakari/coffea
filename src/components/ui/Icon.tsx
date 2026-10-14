@@ -21,6 +21,12 @@ const glyphs = {
       <Circle cx={12} cy={7} r={4} />
     </>
   ),
+  calendar: (
+    <>
+      <Rect x={3} y={5} width={18} height={16} rx={3} />
+      <Path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
   close: <Path d="M18 6 6 18M6 6l12 12" />,
   check: <Path d="m5 12.5 4.5 4.5L19 7.5" />,
   share: (
