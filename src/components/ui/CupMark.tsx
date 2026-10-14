@@ -3,6 +3,8 @@ import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 
 
 import { palette } from '@/theme';
 
+import { turkishCoffee } from './turkishCoffee';
+
 type CupMarkProps = {
   size?: number;
   // A coffee type key (see `coffeeTypes`) or the name of any other coffee,
@@ -15,7 +17,8 @@ type CupMarkProps = {
 type Vessel = 'cup' | 'demitasse' | 'mug';
 
 // Hot drinks are a vessel seen from above. Iced ones are a drawing of their
-// own, since ice and a straw only read from the side.
+// own, since ice and a straw only read from the side, and so is Turkish
+// coffee, which comes on a saucer no other drink has.
 type Drink = { vessel: Vessel; liquid: string; art?: ReactNode } | { scene: ReactNode };
 
 const ink = {
@@ -35,7 +38,6 @@ const ink = {
   coldBrewSurface: '#4A2E22',
   matcha: '#8DA65B',
   matchaFoam: '#DCE5BE',
-  lokum: '#E3A9A3',
 } as const;
 
 const heart = (
@@ -97,52 +99,9 @@ function icedCup(id: string, top: string, bottom: string, surface: string, shado
   );
 }
 
-// A ring of dots round the saucer's rim, with gaps left for the handle and
-// the lokum.
-const SAUCER_DOTS = 20;
-const saucerDots = Array.from({ length: SAUCER_DOTS }, (_, index) => index)
-  .filter((index) => ![7, 8, 18].includes(index))
-  .map((index) => {
-    const angle = (2 * Math.PI * index) / SAUCER_DOTS;
-    return <Circle key={index} cx={60 + 41.5 * Math.cos(angle)} cy={60 + 41.5 * Math.sin(angle)} r={1.4} />;
-  });
-
 const drinks: Record<string, Drink> = {
-  // Foam to the brim with the grounds showing through, a patterned saucer
-  // and a piece of lokum on the side.
-  turkish: {
-    vessel: 'demitasse',
-    liquid: ink.cremaEdge,
-    art: (
-      <>
-        <G fill={ink.crema}>{saucerDots}</G>
-        <Circle cx={60} cy={60} r={18.5} fill="none" stroke={ink.crema} strokeWidth={3} />
-        <Path
-          d="M52 61c0-6 5-10 10-9c5 1 8 5 6 10c-2 5-7 7-11 6c-3-1-5-3-5-7Z"
-          fill={ink.drizzle}
-          fillOpacity={0.7}
-        />
-        <G fill={ink.foam} fillOpacity={0.7}>
-          <Circle cx={54} cy={52} r={1.5} />
-          <Circle cx={67} cy={68} r={1.2} />
-          <Circle cx={50} cy={65} r={1} />
-        </G>
-        <G rotation={-18} origin="33, 86">
-          <Rect
-            x={27}
-            y={80}
-            width={12}
-            height={12}
-            rx={3}
-            fill={ink.lokum}
-            stroke={palette.softWhite}
-            strokeWidth={1.5}
-          />
-          <Path d="M30.5 84.5h5" stroke={palette.softWhite} strokeOpacity={0.8} strokeWidth={1.5} strokeLinecap="round" />
-        </G>
-      </>
-    ),
-  },
+  // Drawn as the app's icon draws it, painted saucer and all.
+  turkish: { scene: turkishCoffee },
   espresso: {
     vessel: 'demitasse',
     liquid: ink.crema,
