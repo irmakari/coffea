@@ -37,7 +37,7 @@ export function EntryCard({ entry }: { entry: Entry }) {
           uri={entry.photoUrl}
           cacheKey={entry.photoPath}
           drink={entry.type}
-          ratio="landscape"
+          ratio="wide"
           style={styles.cardPhoto}
         />
       ) : null}

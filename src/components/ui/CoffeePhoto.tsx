@@ -24,12 +24,16 @@ type CoffeePhotoProps = {
 export function CoffeePhoto({ uri, cacheKey, ratio = 'portrait', drink, accessibilityLabel, style }: CoffeePhotoProps) {
   const illustrated = !uri && !!drink;
 
-  const [width, setWidth] = useState(0);
+  // The shorter side, so the cup mark fits wide crops as well as tall ones.
+  const [side, setSide] = useState(0);
 
   return (
     <View
       style={[styles.frame, { aspectRatio: photoRatio[ratio] }, style, illustrated && styles.illustrated]}
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setSide(Math.min(width, height));
+      }}
     >
       {uri ? (
         <Image
@@ -39,8 +43,8 @@ export function CoffeePhoto({ uri, cacheKey, ratio = 'portrait', drink, accessib
           accessibilityLabel={accessibilityLabel}
           style={StyleSheet.absoluteFill}
         />
-      ) : width > 0 ? (
-        <CupMark drink={drink} size={Math.round(Math.min(width * (illustrated ? 0.68 : 0.5), 180))} />
+      ) : side > 0 ? (
+        <CupMark drink={drink} size={Math.round(Math.min(side * (illustrated ? 0.68 : 0.5), 180))} />
       ) : null}
     </View>
   );
