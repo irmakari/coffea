@@ -20,7 +20,7 @@ import { EntryRow } from "@/features/entries/EntryCard";
 import { MonthCalendar } from "@/features/entries/MonthCalendar";
 import type { Entry } from "@/features/entries/types";
 import { formatDate, formatNumber, t } from "@/i18n";
-import { colors, radii, sizes, spacing } from "@/theme";
+import { colors, contentColumn, radii, sizes, spacing } from "@/theme";
 
 function countLabel(count: number) {
   if (count === 0) return t("diary.count.none");
@@ -122,7 +122,7 @@ export default function DiaryScreen() {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[contentColumn, styles.content]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

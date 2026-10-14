@@ -9,19 +9,24 @@ type IconButtonProps = {
   // Read by screen readers, since the button has no visible text.
   label: string;
   filled?: boolean;
+  // Just the glyph, a little larger, with no disc behind it.
+  plain?: boolean;
   onPress: () => void;
 };
 
-export function IconButton({ icon, label, filled, onPress }: IconButtonProps) {
+export function IconButton({ icon, label, filled, plain = false, onPress }: IconButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       hitSlop={spacing.sm}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.button,
+        plain ? pressed && styles.plainPressed : [styles.disc, pressed && styles.pressed],
+      ]}
     >
-      <Icon name={icon} size={18} filled={filled} />
+      <Icon name={icon} size={plain ? 22 : 18} filled={filled} />
     </Pressable>
   );
 }
@@ -31,11 +36,16 @@ const styles = StyleSheet.create({
     width: sizes.chip,
     height: sizes.chip,
     borderRadius: radii.pill,
-    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  disc: {
+    backgroundColor: colors.surface,
+  },
   pressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  plainPressed: {
+    opacity: 0.5,
   },
 });

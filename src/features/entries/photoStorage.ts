@@ -1,26 +1,16 @@
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-
 import { supabase } from '@/lib/supabase';
 
 const BUCKET = 'coffee-photos';
-// Wide enough for a full-screen photo and a share card, small enough to
-// upload quickly on a phone connection.
-const MAX_WIDTH = 1600;
 const LINK_LIFETIME_SECONDS = 60 * 60 * 24;
 
 export function isLocalPhoto(uri: string | null): uri is string {
   return uri !== null && !uri.startsWith('http');
 }
 
-// Resizes a photo from the device and stores it in the user's own folder.
-// Resolves to the storage path that is saved on the entry.
-export async function uploadPhoto(userId: string, localUri: string, width = MAX_WIDTH): Promise<string> {
-  const context = ImageManipulator.manipulate(localUri);
-  context.resize({ width });
-  const rendered = await context.renderAsync();
-  const resized = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
-
-  const file = await fetch(resized.uri);
+// Stores a picked photo in the user's own folder. `pickPhoto` has already
+// made it small. Resolves to the storage path that is saved on the entry.
+export async function uploadPhoto(userId: string, localUri: string): Promise<string> {
+  const file = await fetch(localUri);
   const body = await file.arrayBuffer();
 
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
@@ -29,9 +19,47 @@ export async function uploadPhoto(userId: string, localUri: string, width = MAX_
   return path;
 }
 
+// Uploads begun the moment a photo was picked, by the file they came from.
+// The rest of the form is filled in meanwhile, so saving rarely has to wait.
+const early = new Map<string, Promise<string>>();
+
+export function startUpload(userId: string, localUri: string) {
+  if (early.has(localUri)) return;
+  const upload = uploadPhoto(userId, localUri);
+  // A failure is dealt with in `finishUpload`, which tries once more.
+  upload.catch(() => {});
+  early.set(localUri, upload);
+}
+
+// Resolves to the storage path of a picked photo, uploading it now if it was
+// not started early or that attempt failed.
+export async function finishUpload(userId: string, localUri: string): Promise<string> {
+  const upload = early.get(localUri);
+  early.delete(localUri);
+  if (upload) {
+    try {
+      return await upload;
+    } catch {
+      // Fall through to a fresh attempt.
+    }
+  }
+  return uploadPhoto(userId, localUri);
+}
+
+// For a photo that was picked and then replaced, removed or never saved.
+export function cancelUpload(localUri: string) {
+  const upload = early.get(localUri);
+  if (!upload) return;
+  early.delete(localUri);
+  upload.then(removePhoto, () => {});
+}
+
 // Best effort: a photo left behind is harmless, so failures are not surfaced.
 export async function removePhoto(path: string): Promise<void> {
-  await supabase.storage.from(BUCKET).remove([path]);
+  await supabase.storage
+    .from(BUCKET)
+    .remove([path])
+    .catch(() => {});
 }
 
 // The bucket is private, so photos are shown through short-lived links.

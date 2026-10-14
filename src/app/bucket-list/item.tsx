@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, EmptyState, ModalHeader, Screen, Text, TextField } from '@/components/ui';
-import { emptyBucketDraft, type BucketDraft } from '@/features/bucketList/bucketListApi';
+import { Button, EmptyState, KeyboardAvoider, LoadingState, ModalHeader, Screen, Text, TextField } from '@/components/ui';
+import { emptyBucketDraft, type BucketDraft, type BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
 import { t } from '@/i18n';
 import { colors, spacing } from '@/theme';
@@ -12,9 +12,26 @@ import { colors, spacing } from '@/theme';
 // One screen for both adding (no `id`) and editing a bucket-list item.
 export default function BucketItemScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const insets = useSafeAreaInsets();
-  const { items, add, update, remove } = useBucketList();
+  const { items, status } = useBucketList();
   const existing = id ? items.find((item) => item.id === id) : undefined;
+
+  if (id && !existing) {
+    return (
+      <Screen padded={false} edges={['top']}>
+        <ModalHeader title={t('bucketList.form.editTitle')} />
+        {status === 'loading' ? <LoadingState /> : <EmptyState title={t('bucketList.form.notFound')} />}
+      </Screen>
+    );
+  }
+
+  // Keyed so the form starts from the item once it has loaded.
+  return <BucketItemForm key={existing?.id ?? 'new'} existing={existing} />;
+}
+
+function BucketItemForm({ existing }: { existing?: BucketItem }) {
+  const id = existing?.id;
+  const insets = useSafeAreaInsets();
+  const { add, update, remove } = useBucketList();
 
   const [draft, setDraft] = useState<BucketDraft>(
     existing
@@ -23,15 +40,6 @@ export default function BucketItemScreen() {
   );
   const [busy, setBusy] = useState<'saving' | 'deleting' | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  if (id && !existing) {
-    return (
-      <Screen padded={false} edges={['top']}>
-        <ModalHeader title={t('bucketList.form.editTitle')} />
-        <EmptyState title={t('bucketList.form.notFound')} />
-      </Screen>
-    );
-  }
 
   const change = (changes: Partial<BucketDraft>) => setDraft((current) => ({ ...current, ...changes }));
 
@@ -63,7 +71,7 @@ export default function BucketItemScreen() {
   return (
     <Screen padded={false} edges={['top']}>
       <ModalHeader title={t(id ? 'bucketList.form.editTitle' : 'bucketList.form.newTitle')} />
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoider>
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -124,15 +132,12 @@ export default function BucketItemScreen() {
             />
           ) : null}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
-import { EmptyState, ModalHeader, Screen } from '@/components/ui';
+import { EmptyState, LoadingState, PageHeader, Screen } from '@/components/ui';
 import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { draftFromEntry, type EntryDraft } from '@/features/entries/types';
@@ -11,7 +11,7 @@ import { t } from '@/i18n';
 export default function EditCoffeeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const entry = useEntry(id);
-  const { update } = useEntries();
+  const { status, update } = useEntries();
   const { profile } = useProfile();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function EditCoffeeScreen() {
 
   return (
     <Screen padded={false} edges={['top']}>
-      <ModalHeader title={t('entry.editTitle')} />
+      <PageHeader title={t('entry.editTitle')} />
       {entry ? (
         <EntryForm
           initialValues={draftFromEntry(entry, profile.preferredCurrency)}
@@ -40,6 +40,8 @@ export default function EditCoffeeScreen() {
           submitting={submitting}
           error={error}
         />
+      ) : status === 'loading' ? (
+        <LoadingState />
       ) : (
         <EmptyState title={t('entry.notFound')} />
       )}

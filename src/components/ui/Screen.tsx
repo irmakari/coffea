@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '@/theme';
+import { colors, contentColumn, spacing } from '@/theme';
 
 type ScreenProps = {
   children: ReactNode;
@@ -21,14 +21,14 @@ export function Screen({ children, scroll = false, padded = true, edges = ['top'
     <SafeAreaView style={styles.root} edges={edges}>
       {scroll ? (
         <ScrollView
-          contentContainerStyle={[padding, styles.scrollContent, contentStyle]}
+          contentContainerStyle={[contentColumn, padding, styles.scrollContent, contentStyle]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>
       ) : (
-        <View style={[padding, styles.fill, contentStyle]}>{children}</View>
+        <View style={[contentColumn, padding, styles.fill, contentStyle]}>{children}</View>
       )}
     </SafeAreaView>
   );

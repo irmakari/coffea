@@ -1,10 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, EmptyState, ModalHeader, Screen, Text } from '@/components/ui';
-import { useEntry } from '@/features/entries/EntriesProvider';
+import { Button, Chip, EmptyState, LoadingState, ModalHeader, Screen, Text } from '@/components/ui';
+import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { CARD_RATIO, ShareCard, shareTemplates, type ShareTemplate } from '@/features/share/ShareCard';
 import { shareCard } from '@/features/share/shareImage';
 import { t } from '@/i18n';
@@ -13,8 +13,10 @@ import { colors, spacing } from '@/theme';
 export default function ShareCoffeeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const entry = useEntry(id);
+  const { status } = useEntries();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  // The space left for the preview once the controls are placed.
+  const [area, setArea] = useState({ width: 0, height: 0 });
   const card = useRef<View>(null);
 
   const [template, setTemplate] = useState<ShareTemplate>('journal');
@@ -25,13 +27,15 @@ export default function ShareCoffeeScreen() {
     return (
       <Screen padded={false} edges={['top']}>
         <ModalHeader title={t('share.title')} />
-        <EmptyState title={t('entry.notFound')} />
+        {status === 'loading' ? <LoadingState /> : <EmptyState title={t('entry.notFound')} />}
       </Screen>
     );
   }
 
-  // The preview is as large as the screen allows once the controls are placed.
-  const previewWidth = Math.round(Math.min(width - spacing.xxxl * 2, (height - 420) * CARD_RATIO));
+  const previewWidth = Math.max(
+    0,
+    Math.floor(Math.min(area.width - spacing.xxxl * 2, (area.height - spacing.lg * 2) * CARD_RATIO)),
+  );
 
   const share = async () => {
     setFailure(null);
@@ -49,10 +53,18 @@ export default function ShareCoffeeScreen() {
     <Screen padded={false} edges={['top']}>
       <ModalHeader title={t('share.title')} />
 
-      <View style={styles.preview}>
-        <View style={styles.cardShadow}>
-          <ShareCard ref={card} entry={entry} template={template} width={previewWidth} />
-        </View>
+      <View
+        style={styles.preview}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setArea({ width, height });
+        }}
+      >
+        {previewWidth > 0 ? (
+          <View style={styles.cardShadow}>
+            <ShareCard ref={card} entry={entry} template={template} width={previewWidth} />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.templates} accessibilityRole="radiogroup">

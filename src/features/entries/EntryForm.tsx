@@ -1,15 +1,18 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, Icon, Text, TextField } from '@/components/ui';
+import { Button, Chip, Icon, KeyboardAvoider, Text, TextField } from '@/components/ui';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { t } from '@/i18n';
 import { colors, sizes, spacing } from '@/theme';
 
 import { DateField } from './DateField';
+import { MoreCoffeesSheet } from './MoreCoffeesSheet';
 import { PhotoField } from './PhotoField';
+import { cancelUpload, isLocalPhoto, startUpload } from './photoStorage';
 import { RatingInput } from './RatingInput';
-import { coffeeTypes, parsePrice, type EntryDraft } from './types';
+import { coffeeTypes, milkTypes, parsePrice, takesMilk, type EntryDraft } from './types';
 
 type EntryFormProps = {
   initialValues: EntryDraft;
@@ -18,6 +21,10 @@ type EntryFormProps = {
   submitting?: boolean;
   // Shown above the save button when saving failed.
   error?: string | null;
+  // Scrolls away with the fields, for screens without a header of their own.
+  header?: ReactNode;
+  // On a tab the bar below already clears the bottom of the screen.
+  aboveTabBar?: boolean;
 };
 
 function hasDetails(draft: EntryDraft) {
@@ -30,24 +37,50 @@ export function EntryForm({
   onSubmit,
   submitting = false,
   error,
+  header,
+  aboveTabBar = false,
 }: EntryFormProps) {
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [draft, setDraft] = useState(initialValues);
   const [detailsOpen, setDetailsOpen] = useState(() => hasDetails(initialValues));
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const update = (changes: Partial<EntryDraft>) => setDraft((current) => ({ ...current, ...changes }));
+
+  // A picked photo starts uploading at once, while the rest is filled in.
+  // One that is swapped out, removed or left unsaved is taken back down.
+  const photo = useRef(initialValues.photoUri);
+  const changePhoto = (photoUri: string | null) => {
+    if (photo.current) cancelUpload(photo.current);
+    if (userId && isLocalPhoto(photoUri)) startUpload(userId, photoUri);
+    photo.current = photoUri;
+    update({ photoUri });
+  };
+  useEffect(
+    () => () => {
+      if (photo.current) cancelUpload(photo.current);
+    },
+    [],
+  );
   const priceInvalid = Number.isNaN(parsePrice(draft.price));
   const canSave = draft.name.trim() !== '' && !priceInvalid;
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoider>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
-        <PhotoField uri={draft.photoUri} drink={draft.type} onChange={(photoUri) => update({ photoUri })} />
+        {header}
+        <PhotoField
+          uri={draft.photoUri}
+          drink={draft.type === 'other' ? draft.customType || draft.type : draft.type}
+          onChange={changePhoto}
+        />
 
         <TextField
           label={t('entry.name.label')}
@@ -64,25 +97,43 @@ export function EntryForm({
             {t('entry.type.label')}
           </Text>
           <View style={styles.chips}>
-            {coffeeTypes.map((type) => (
-              <Chip
-                key={type}
-                label={t(`coffeeTypes.${type}`)}
-                selected={draft.type === type}
-                onPress={() => update({ type: draft.type === type ? null : type })}
-              />
-            ))}
+            {coffeeTypes.map((type) =>
+              type === 'other' ? (
+                // Opens the longer list, and afterwards carries what was picked.
+                <Chip
+                  key={type}
+                  label={(draft.type === 'other' && draft.customType) || t('coffeeTypes.other')}
+                  selected={draft.type === 'other'}
+                  onPress={() => setMoreOpen(true)}
+                />
+              ) : (
+                <Chip
+                  key={type}
+                  label={t(`coffeeTypes.${type}`)}
+                  selected={draft.type === type}
+                  onPress={() => update({ type: draft.type === type ? null : type })}
+                />
+              ),
+            )}
           </View>
         </View>
 
-        {draft.type === 'other' ? (
-          <TextField
-            label={t('entry.type.customLabel')}
-            placeholder={t('entry.type.customPlaceholder')}
-            value={draft.customType}
-            onChangeText={(customType) => update({ customType })}
-            maxLength={40}
-          />
+        {takesMilk(draft.type) ? (
+          <View style={styles.group}>
+            <Text variant="label" color="textSecondary">
+              {t('entry.milk.label')}
+            </Text>
+            <View style={styles.chips}>
+              {milkTypes.map((milk) => (
+                <Chip
+                  key={milk}
+                  label={t(`milkTypes.${milk}`)}
+                  selected={draft.milk === milk}
+                  onPress={() => update({ milk: draft.milk === milk ? null : milk })}
+                />
+              ))}
+            </View>
+          </View>
         ) : null}
 
         <Pressable
@@ -138,7 +189,16 @@ export function EntryForm({
         ) : null}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+      <MoreCoffeesSheet
+        visible={moreOpen}
+        value={draft.type === 'other' ? draft.customType : ''}
+        onDone={(customType) => {
+          if (customType) update({ type: 'other', customType });
+          setMoreOpen(false);
+        }}
+      />
+
+      <View style={[styles.footer, { paddingBottom: aboveTabBar ? spacing.lg : Math.max(insets.bottom, spacing.lg) }]}>
         {error ? (
           <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
             {error}
@@ -151,14 +211,11 @@ export function EntryForm({
           onPress={() => onSubmit({ ...draft, name: draft.name.trim() })}
         />
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,

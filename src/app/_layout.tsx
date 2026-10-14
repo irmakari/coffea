@@ -46,13 +46,13 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="log" options={{ presentation: 'modal' }} />
           <Stack.Screen name="entry/[id]/index" />
-          <Stack.Screen name="entry/[id]/edit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="entry/[id]/edit" />
           <Stack.Screen name="entry/[id]/share" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="favorites" />
+          <Stack.Screen name="collection" />
           <Stack.Screen name="stats" />
           <Stack.Screen name="settings/currency" />
+          <Stack.Screen name="settings/cup" />
           <Stack.Screen name="settings/name" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bucket-list/index" />
           <Stack.Screen name="bucket-list/item" options={{ presentation: 'modal' }} />

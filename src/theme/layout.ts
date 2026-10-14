@@ -10,6 +10,14 @@ export const spacing = {
   screen: 24,
 } as const;
 
+// On tablets content sits in a centred column instead of stretching edge to
+// edge. Phones are narrower than this, so it changes nothing there.
+export const contentColumn = {
+  width: '100%',
+  maxWidth: 640,
+  alignSelf: 'center',
+} as const;
+
 // Three radii only: controls, photographs and panels, and fully round.
 export const radii = {
   control: 16,

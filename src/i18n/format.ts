@@ -7,6 +7,7 @@ const dateStyles = {
   dayShort: { weekday: 'short', month: 'short', day: 'numeric' },
   month: { month: 'long', year: 'numeric' },
   monthName: { month: 'long' },
+  weekdayInitial: { weekday: 'narrow' },
   year: { year: 'numeric' },
   short: { month: 'short', day: 'numeric', year: 'numeric' },
   time: { hour: 'numeric', minute: '2-digit' },

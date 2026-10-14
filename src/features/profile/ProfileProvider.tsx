@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 import { DEFAULT_CURRENCY } from './currencies';
 
-const AVATAR_WIDTH = 480;
+// Passed to `pickPhoto`, so the avatar is already this small when it gets here.
+export const AVATAR_SIZE = 480;
 
 type Profile = {
   displayName: string | null;
@@ -75,9 +76,11 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
     if (!userId) return;
     let cancelled = false;
     // If this fails the defaults stay in place; nothing here blocks the app.
-    loadProfile(userId).then((loaded) => {
-      if (!cancelled && loaded) setProfile(loaded);
-    });
+    loadProfile(userId)
+      .then((loaded) => {
+        if (!cancelled && loaded) setProfile(loaded);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -104,7 +107,7 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
       setAvatar: async (localUri) => {
         if (!userId) throw new Error('Not signed in');
         const previous = profile.avatarPath;
-        const avatarPath = await uploadPhoto(userId, localUri, AVATAR_WIDTH);
+        const avatarPath = await uploadPhoto(userId, localUri);
         try {
           await save({ avatar_path: avatarPath });
         } catch (error) {

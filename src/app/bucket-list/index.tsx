@@ -8,8 +8,8 @@ import {
   Icon,
   IconButton,
   LoadingState,
+  PageHeader,
   Screen,
-  ScreenHeader,
   SectionHeader,
   Text,
 } from '@/components/ui';
@@ -87,13 +87,13 @@ export default function BucketListScreen() {
 
   return (
     <Screen scroll edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <IconButton icon="chevronLeft" label={t('common.back')} onPress={() => router.back()} />
-        {items.length > 0 ? (
-          <IconButton icon="plus" label={t('bucketList.add')} onPress={() => openItem()} />
-        ) : null}
-      </View>
-      <ScreenHeader title={t('bucketList.title')} />
+      <PageHeader
+        padded={false}
+        title={t('bucketList.title')}
+        trailing={
+          items.length > 0 ? <IconButton icon="plus" label={t('bucketList.add')} onPress={() => openItem()} /> : null
+        }
+      />
 
       {items.length === 0 ? (
         status === 'loading' ? (
@@ -127,11 +127,6 @@ export default function BucketListScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
   failure: {
     marginTop: spacing.lg,
   },

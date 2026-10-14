@@ -4,6 +4,7 @@ export const en = {
   },
   common: {
     close: 'Close',
+    done: 'Done',
     back: 'Back',
     cancel: 'Cancel',
     retry: 'Try again',
@@ -20,6 +21,11 @@ export const en = {
     log: 'Log a coffee',
     collections: 'Collections',
     profile: 'Profile',
+  },
+  quickLog: {
+    title: 'Quick log',
+    body: 'Pick a coffee to start with.',
+    hint: 'Hold to pick a coffee.',
   },
   home: {
     greeting: {
@@ -61,17 +67,24 @@ export const en = {
   },
   collections: {
     title: 'Collections',
-    all: {
-      name: 'All Coffees',
-      description: 'Everything you have logged.',
-    },
-    favorites: {
-      name: 'Favorites',
-      description: 'The ones worth going back for.',
-    },
+    favorites: 'Favorites',
+    fiveStars: 'Five stars',
     bucketList: {
       name: 'Bucket List',
       description: 'Coffees you would like to try.',
+    },
+    byType: 'By type',
+    byCafe: 'By café',
+    count: {
+      none: 'No coffees yet',
+      one: '1 coffee',
+      other: '{{count}} coffees',
+    },
+    hint: 'Log a few coffees and they will sort themselves here by type and café.',
+    empty: {
+      title: 'Nothing here yet',
+      fiveStars: 'Give a coffee five stars and it is kept here.',
+      other: 'Coffees you log will show up here.',
     },
   },
   share: {
@@ -87,7 +100,6 @@ export const en = {
     error: 'The image could not be created. Please try again.',
   },
   favorites: {
-    title: 'Favorites',
     empty: {
       title: 'No favorites yet',
       body: 'Open a coffee and tap the heart to keep it here.',
@@ -198,6 +210,7 @@ export const en = {
     journal: 'Journal',
     stats: 'Your coffee in numbers',
     currency: 'Currency',
+    cup: 'Tab bar cup',
     account: 'Account',
     name: 'Name',
     photo: 'Profile photo',
@@ -240,12 +253,76 @@ export const en = {
       note: 'Only coffees with a price are counted. Currencies are never mixed.',
     },
     topRated: 'Highest rated',
+    photos: 'Photos',
     empty: {
       title: 'Numbers come later',
       body: 'Log a few coffees and this page will start to tell you about your habits.',
     },
+    month: {
+      eyebrow: 'This month · {{month}}',
+      coffeeOfTheMonth: {
+        one: 'Your coffee of the month, once so far',
+        other: 'Your coffee of the month, {{count}} times so far',
+      },
+      noType: {
+        title: 'Still brewing',
+        body: 'Pick a type when you log and your coffee of the month shows up here.',
+      },
+      empty: {
+        title: 'A fresh month',
+        body: 'Log a coffee and this month starts to fill in.',
+      },
+      cups: {
+        one: 'cup',
+        other: 'cups',
+      },
+      spent: 'spent',
+      cafes: {
+        one: 'café',
+        other: 'cafés',
+      },
+      types: {
+        one: 'type',
+        other: 'types',
+      },
+      days: {
+        one: 'day',
+        other: 'days',
+      },
+      topCafe: 'Most visited: {{cafe}}',
+      more: {
+        one: '1 more than this time last month',
+        other: '{{count}} more than this time last month',
+      },
+      fewer: {
+        one: '1 fewer than this time last month',
+        other: '{{count}} fewer than this time last month',
+      },
+      same: 'Level with this time last month',
+      open: 'See all your numbers',
+    },
+    streak: {
+      title: 'Streak',
+      days: {
+        none: 'No streak yet',
+        one: '1 day in a row',
+        other: '{{count}} days in a row',
+      },
+      keep: 'Log a coffee today to keep it going.',
+      start: 'Log a coffee today to start one.',
+      best: {
+        one: 'Your best so far: 1 day',
+        other: 'Your best so far: {{count}} days',
+      },
+      week: '{{count}} of the last 7 days',
+    },
   },
   settings: {
+    cup: {
+      title: 'Your cup',
+      body: 'Pick the coffee that sits in the middle of the tab bar.',
+      classic: 'Classic',
+    },
     name: {
       title: 'Your name',
       save: 'Save',
@@ -301,11 +378,25 @@ export const en = {
     type: {
       label: 'Type',
       customLabel: 'Your own',
-      customPlaceholder: 'Cortado, pour over…',
+      customPlaceholder: 'Anything that is not on the list',
+    },
+    more: {
+      title: 'More coffees',
+      hint: 'Pick one below or write your own.',
+      groups: {
+        espresso: 'Espresso bar',
+        milk: 'With milk',
+        iced: 'Iced & shaken',
+        brewed: 'Brewed',
+      },
+    },
+    milk: {
+      label: 'Milk',
     },
     details: {
       show: 'Add café, rating, price or notes',
       hide: 'Hide details',
+      add: 'Add more details',
     },
     cafe: {
       label: 'Café',
@@ -322,6 +413,10 @@ export const en = {
     },
     date: {
       label: 'When',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      earlier: 'Another day',
+      time: 'Time',
     },
     notes: {
       label: 'Notes',
@@ -331,7 +426,17 @@ export const en = {
     saveChanges: 'Save changes',
     saveError: 'Your coffee could not be saved. Check your connection and try again.',
   },
+  milkTypes: {
+    whole: 'Whole',
+    lowFat: 'Low-fat',
+    lactoseFree: 'Lactose-free',
+    oat: 'Oat',
+    almond: 'Almond',
+    soy: 'Soy',
+    coconut: 'Coconut',
+  },
   coffeeTypes: {
+    turkish: 'Turkish Coffee',
     espresso: 'Espresso',
     americano: 'Americano',
     latte: 'Latte',

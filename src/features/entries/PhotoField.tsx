@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { CoffeePhoto, CupMark, Icon, Text } from '@/components/ui';
 import { t } from '@/i18n';
@@ -16,14 +16,20 @@ type PhotoFieldProps = {
 
 export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
   const [failed, setFailed] = useState(false);
+  // From opening the picker until the chosen photo is ready to show.
+  const [busy, setBusy] = useState(false);
 
   const choose = async () => {
+    if (busy) return;
     setFailed(false);
+    setBusy(true);
     try {
       const picked = await pickPhoto();
       if (picked) onChange(picked);
     } catch {
       setFailed(true);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -31,7 +37,13 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
     <View style={styles.container}>
       {uri ? (
         <View>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('entry.photo.change')} onPress={choose}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('entry.photo.change')}
+            accessibilityState={{ busy }}
+            onPress={choose}
+            style={busy && styles.busy}
+          >
             <CoffeePhoto uri={uri} ratio="landscape" />
           </Pressable>
           <Pressable
@@ -45,27 +57,29 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
           </Pressable>
         </View>
       ) : (
+        // The cup is the page's picture until a photograph takes its place,
+        // and it turns into the drink as soon as a type is chosen.
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('entry.photo.add')}
+          accessibilityState={{ busy }}
           onPress={choose}
-          style={({ pressed }) => [
-            styles.empty,
-            drink && styles.emptyDrawn,
-            pressed && (drink ? styles.emptyDrawnPressed : styles.emptyPressed),
-          ]}
+          style={({ pressed }) => [styles.empty, pressed && styles.emptyPressed]}
         >
-          {drink ? (
-            <CupMark drink={drink} size={88} />
-          ) : (
-            <Icon name="photo" size={28} color="textSecondary" strokeWidth={1.25} />
-          )}
-          <View style={styles.emptyText}>
-            <Text variant="bodyStrong">{t('entry.photo.add')}</Text>
-            <Text variant="caption" color={drink ? 'accentPressed' : 'textMuted'}>
-              {drink ? t('entry.photo.fallback') : t('common.optional')}
-            </Text>
+          <CupMark drink={drink} size={120} />
+          <View style={styles.add}>
+            {busy ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <Icon name="photo" size={18} strokeWidth={1.5} />
+            )}
+            <Text variant="label">{t('entry.photo.add')}</Text>
           </View>
+          {drink ? (
+            <Text variant="caption" color="accentPressed">
+              {t('entry.photo.fallback')}
+            </Text>
+          ) : null}
         </Pressable>
       )}
       {failed ? (
@@ -81,26 +95,30 @@ const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
   },
+  // The same crop as a picked photo, so choosing one does not move the form.
   empty: {
-    aspectRatio: photoRatio.landscape * 1.6,
+    aspectRatio: photoRatio.landscape,
     borderRadius: radii.frame,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   emptyPressed: {
-    backgroundColor: colors.surfacePressed,
-  },
-  emptyDrawn: {
-    backgroundColor: colors.highlight,
-  },
-  emptyDrawnPressed: {
     opacity: 0.8,
   },
-  emptyText: {
+  add: {
+    minHeight: sizes.chip,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+  },
+  busy: {
+    opacity: 0.6,
   },
   remove: {
     position: 'absolute',

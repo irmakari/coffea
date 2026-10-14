@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { Text } from "@/components/ui";
+import { CupMark, Text } from "@/components/ui";
 import { weekdayInitials } from "@/i18n";
 import { colors, radii, spacing } from "@/theme";
 
@@ -36,7 +36,10 @@ function buildWeeks(month: Date): (number | null)[][] {
   return weeks;
 }
 
-// A month at a glance: each day you had a coffee shows its photograph.
+const GAP = spacing.sm - 2;
+
+// A month at a glance: each day you had a coffee shows its photograph, or
+// failing that a drawing of what was drunk.
 export function MonthCalendar({
   month,
   entriesByDay,
@@ -45,6 +48,9 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const weeks = useMemo(() => buildWeeks(month), [month]);
   const initials = useMemo(() => weekdayInitials(), []);
+  // The cup is drawn to fit a day, whose size follows the calendar's width.
+  const [width, setWidth] = useState(0);
+  const cupSize = Math.max(0, Math.floor(((width - GAP * 6) / 7) * 0.8));
 
   const now = new Date();
   const today =
@@ -54,7 +60,10 @@ export function MonthCalendar({
       : null;
 
   return (
-    <View style={styles.calendar}>
+    <View
+      style={styles.calendar}
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+    >
       <View style={styles.week}>
         {initials.map((initial, index) => (
           <Text
@@ -108,6 +117,11 @@ export function MonthCalendar({
                       transition={150}
                       style={StyleSheet.absoluteFill}
                     />
+                  ) : hasCoffee ? (
+                    <CupMark
+                      drink={entries.find((entry) => entry.type)?.type}
+                      size={cupSize}
+                    />
                   ) : (
                     <Text
                       variant="label"
@@ -140,11 +154,11 @@ export function MonthCalendar({
 
 const styles = StyleSheet.create({
   calendar: {
-    gap: spacing.sm - 2,
+    gap: GAP,
   },
   week: {
     flexDirection: "row",
-    gap: spacing.sm - 2,
+    gap: GAP,
   },
   weekday: {
     flex: 1,

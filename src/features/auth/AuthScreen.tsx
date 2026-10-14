@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { t } from '@/i18n';
-import { colors, sizes, spacing } from '@/theme';
+import { colors, contentColumn, sizes, spacing } from '@/theme';
 
 type AuthScreenProps = {
   title: string;
@@ -20,7 +20,7 @@ export function AuthScreen({ title, subtitle, children, footer }: AuthScreenProp
     <SafeAreaView style={styles.root}>
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[contentColumn, styles.content]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

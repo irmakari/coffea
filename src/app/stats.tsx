@@ -1,8 +1,7 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { Card, Chip, CoffeePhoto, IconButton, Screen, SectionHeader, Text } from '@/components/ui';
+import { Card, Chip, CoffeePhoto, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryRow } from '@/features/entries/EntryCard';
 import { isCoffeeType } from '@/features/entries/types';
@@ -60,12 +59,7 @@ export default function StatsScreen() {
 
   return (
     <Screen scroll edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <IconButton icon="chevronLeft" label={t('common.back')} onPress={() => router.back()} />
-        <Text variant="display" accessibilityRole="header">
-          {t('stats.heading')}
-        </Text>
-      </View>
+      <PageHeader padded={false} title={t('stats.heading')} />
 
       <View style={styles.periods} accessibilityRole="radiogroup">
         {statsPeriods.map((option) => (
@@ -84,26 +78,6 @@ export default function StatsScreen() {
         </Card>
       ) : (
         <>
-          {withPhoto.length > 0 ? (
-            <Card padded={false} style={styles.card}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.shelf}
-              >
-                {withPhoto.map((entry) => (
-                  <CoffeePhoto
-                    key={entry.id}
-                    uri={entry.photoUrl}
-                    cacheKey={entry.photoPath}
-                    ratio="portrait"
-                    style={styles.shelfPhoto}
-                  />
-                ))}
-              </ScrollView>
-            </Card>
-          ) : null}
-
           <Card style={styles.card}>
             <View style={styles.pair}>
               <Figure label={t('stats.cups')} value={formatNumber(stats.total)} />
@@ -167,6 +141,29 @@ export default function StatsScreen() {
               </Card>
             </View>
           ) : null}
+
+          {withPhoto.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader title={t('stats.photos')} />
+              <Card padded={false}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.shelf}
+                >
+                  {withPhoto.map((entry) => (
+                    <CoffeePhoto
+                      key={entry.id}
+                      uri={entry.photoUrl}
+                      cacheKey={entry.photoPath}
+                      ratio="portrait"
+                      style={styles.shelfPhoto}
+                    />
+                  ))}
+                </ScrollView>
+              </Card>
+            </View>
+          ) : null}
         </>
       )}
     </Screen>
@@ -174,9 +171,6 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.lg,
-  },
   periods: {
     flexDirection: 'row',
     gap: spacing.sm,
