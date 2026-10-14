@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button, Text, TextField } from '@/components/ui';
 import { AuthScreen } from '@/features/auth/AuthScreen';
 import {
-  completePasswordReset,
+  cancelPasswordReset,
   isValidEmail,
   MIN_PASSWORD_LENGTH,
   requestPasswordReset,
+  saveNewPassword,
+  verifyResetCode,
 } from '@/features/auth/authApi';
 import { t } from '@/i18n';
 
@@ -20,6 +22,16 @@ export default function ForgotPasswordScreen() {
   const [showErrors, setShowErrors] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Set once the code has been accepted; from then on only the password is sent.
+  const [verified, setVerified] = useState(false);
+  const pendingReset = useRef(false);
+
+  useEffect(
+    () => () => {
+      if (pendingReset.current) cancelPasswordReset();
+    },
+    [],
+  );
 
   const emailError = isValidEmail(email) ? undefined : t('auth.email.invalid');
   const codeError = /^\d{6,10}$/.test(code.trim()) ? undefined : t('auth.reset.codeInvalid');
@@ -47,12 +59,25 @@ export default function ForgotPasswordScreen() {
   const savePassword = async () => {
     setShowErrors(true);
     setFailure(null);
-    if (codeError || passwordError) return;
+    if ((!verified && codeError) || passwordError) return;
 
     setSubmitting(true);
-    const result = await completePasswordReset(email, code, password);
+    if (!verified) {
+      const checked = await verifyResetCode(email, code);
+      if (!checked.ok) {
+        setFailure(t(checked.message));
+        setSubmitting(false);
+        return;
+      }
+      pendingReset.current = true;
+      setVerified(true);
+    }
+
+    const result = await saveNewPassword(password);
     // On success the user is signed in and the root layout takes over.
-    if (!result.ok) {
+    if (result.ok) {
+      pendingReset.current = false;
+    } else {
       setFailure(t(result.message));
       setSubmitting(false);
     }
@@ -97,16 +122,18 @@ export default function ForgotPasswordScreen() {
       subtitle={t('auth.reset.codeSubtitle', { email: email.trim() })}
       footer={footer}
     >
-      <TextField
-        label={t('auth.reset.codeLabel')}
-        value={code}
-        onChangeText={setCode}
-        error={showErrors ? codeError : undefined}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete="one-time-code"
-        maxLength={10}
-      />
+      {verified ? null : (
+        <TextField
+          label={t('auth.reset.codeLabel')}
+          value={code}
+          onChangeText={setCode}
+          error={showErrors ? codeError : undefined}
+          keyboardType="number-pad"
+          textContentType="oneTimeCode"
+          autoComplete="one-time-code"
+          maxLength={10}
+        />
+      )}
       <TextField
         label={t('auth.reset.newPassword')}
         value={password}
@@ -124,7 +151,9 @@ export default function ForgotPasswordScreen() {
         </Text>
       ) : null}
       <Button label={t('auth.reset.save')} loading={submitting} onPress={savePassword} />
-      <Button variant="quiet" label={t('auth.reset.resend')} disabled={submitting} onPress={sendCode} />
+      {verified ? null : (
+        <Button variant="quiet" label={t('auth.reset.resend')} disabled={submitting} onPress={sendCode} />
+      )}
     </AuthScreen>
   );
 }

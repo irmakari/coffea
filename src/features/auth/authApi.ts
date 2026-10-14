@@ -3,6 +3,8 @@ import type { AuthError } from '@supabase/supabase-js';
 import type { TranslationKey } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 
+import { holdSignIn, releaseSignIn } from './AuthProvider';
+
 export const MIN_PASSWORD_LENGTH = 8;
 
 type AuthResult<T = undefined> = { ok: true; value: T } | { ok: false; message: TranslationKey };
@@ -59,17 +61,32 @@ export async function requestPasswordReset(email: string): Promise<AuthResult> {
   return error ? { ok: false, message: describe(error) } : { ok: true, value: undefined };
 }
 
-// Trades the emailed code for a session, then sets the new password.
-export async function completePasswordReset(
-  email: string,
-  code: string,
-  newPassword: string,
-): Promise<AuthResult> {
-  const verified = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'recovery' });
-  if (verified.error) return { ok: false, message: describe(verified.error) };
+// Trades the emailed code for a session. The app stays on the reset screen
+// until `saveNewPassword` succeeds or the reset is cancelled.
+export async function verifyResetCode(email: string, code: string): Promise<AuthResult> {
+  holdSignIn();
+  const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'recovery' });
+  if (error) {
+    releaseSignIn();
+    return { ok: false, message: describe(error) };
+  }
+  return { ok: true, value: undefined };
+}
 
+// If the password is refused the code stays used, so the user can try another
+// password without asking for a new code.
+export async function saveNewPassword(newPassword: string): Promise<AuthResult> {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
-  return error ? { ok: false, message: describe(error) } : { ok: true, value: undefined };
+  if (error) return { ok: false, message: describe(error) };
+  releaseSignIn();
+  return { ok: true, value: undefined };
+}
+
+// Leaving the screen halfway drops the recovery session, so the old password
+// still applies and the user is not signed in behind their back.
+export async function cancelPasswordReset(): Promise<void> {
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  releaseSignIn();
 }
 
 export async function signOut(): Promise<AuthResult> {
