@@ -37,5 +37,6 @@ export const sizes = {
 export const photoRatio = {
   portrait: 4 / 5,
   landscape: 4 / 3,
+  wide: 16 / 9,
   square: 1,
 } as const;
