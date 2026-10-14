@@ -5,17 +5,31 @@ import * as ImagePicker from 'expo-image-picker';
 // and a share card, small enough to upload quickly on a phone connection.
 const PHOTO_SIZE = 1440;
 
-// Opens the system photo picker. Resolves to a small JPEG on the device,
-// ready to show and to upload, or null if the user backed out. The system
-// picker needs no permission prompt.
-export async function pickPhoto(size = PHOTO_SIZE): Promise<string | null> {
-  const result = await ImagePicker.launchImageLibraryAsync({
+export type PhotoSource = 'library' | 'camera';
+
+// Thrown when the user has turned the camera down, which only Settings can undo.
+export class CameraDeniedError extends Error {}
+
+// The system photo picker needs no permission prompt; the camera asks once.
+async function launch(source: PhotoSource) {
+  if (source === 'camera') {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) throw new CameraDeniedError();
+    return ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
+  }
+  return ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     // Asking for anything but the original makes the picker re-encode the
     // full-size picture before handing it over, which takes seconds.
     quality: 1,
     preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
   });
+}
+
+// Opens the system photo picker or the camera. Resolves to a small JPEG on
+// the device, ready to show and to upload, or null if the user backed out.
+export async function pickPhoto(size = PHOTO_SIZE, source: PhotoSource = 'library'): Promise<string | null> {
+  const result = await launch(source);
   if (result.canceled) return null;
   const asset = result.assets[0];
   if (!asset) return null;

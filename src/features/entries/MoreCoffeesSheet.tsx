@@ -13,7 +13,7 @@ type MoreCoffeesSheetProps = {
   // The coffee chosen so far, or empty.
   value: string;
   // Called when the sheet is closed, with the coffee it was left on. Empty
-  // means nothing was picked.
+  // means none: nothing was picked, or what had been picked was cleared.
   onDone: (name: string) => void;
 };
 

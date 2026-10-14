@@ -18,6 +18,7 @@ import { typeLabel } from '@/features/entries/display';
 import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { isMilkType, MAX_RATING } from '@/features/entries/types';
 import { formatCurrency, formatDate, t } from '@/i18n';
+import { tapFeedback } from '@/lib/haptics';
 import { colors, radii, sizes, spacing } from '@/theme';
 
 // One labelled detail of the coffee. Two sit side by side; an odd one out
@@ -39,6 +40,7 @@ export default function EntryScreen() {
   const { status, remove, toggleFavorite } = useEntries();
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [favoriteFailed, setFavoriteFailed] = useState(false);
 
   if (!entry) {
     return (
@@ -53,7 +55,16 @@ export default function EntryScreen() {
   const price = entry.price !== null && entry.currency ? formatCurrency(entry.price, entry.currency) : null;
   const milk = isMilkType(entry.milk) ? t(`milkTypes.${entry.milk}`) : entry.milk;
   const hasFacts = !!type || !!milk || !!entry.cafe || !!entry.rating || !!price;
-  const incomplete = !type || !entry.cafe || !entry.rating || !price || !entry.notes;
+  // Offered only while none of the details are in. With some of them there
+  // the page is no longer bare, and Edit above does the same.
+  const bare = !entry.cafe && !entry.rating && !price && !entry.notes;
+
+  const favorite = () => {
+    setFavoriteFailed(false);
+    tapFeedback();
+    // The provider puts the heart back if the save fails; this says why.
+    toggleFavorite(entry).catch(() => setFavoriteFailed(true));
+  };
 
   const edit = () => router.push({ pathname: '/entry/[id]/edit', params: { id: entry.id } });
 
@@ -94,8 +105,7 @@ export default function EntryScreen() {
             icon="heart"
             filled={entry.isFavorite}
             label={t(entry.isFavorite ? 'entry.favorite.remove' : 'entry.favorite.add')}
-            // The provider puts the heart back if the save fails.
-            onPress={() => toggleFavorite(entry).catch(() => {})}
+            onPress={favorite}
           />
           <Pressable
             accessibilityRole="button"
@@ -107,6 +117,12 @@ export default function EntryScreen() {
           </Pressable>
         </View>
       </View>
+
+      {favoriteFailed ? (
+        <Text variant="small" color="danger" align="right" accessibilityLiveRegion="polite" style={styles.favoriteFailed}>
+          {t('entry.favorite.error')}
+        </Text>
+      ) : null}
 
       {entry.photoUrl || entry.type ? (
         <CoffeePhoto
@@ -191,7 +207,7 @@ export default function EntryScreen() {
         </Card>
       ) : null}
 
-      {incomplete ? (
+      {bare ? (
         <Pressable
           accessibilityRole="button"
           onPress={edit}
@@ -233,6 +249,9 @@ const styles = StyleSheet.create({
     height: sizes.chip,
     paddingLeft: spacing.sm,
     justifyContent: 'center',
+  },
+  favoriteFailed: {
+    marginTop: spacing.sm,
   },
   photo: {
     marginTop: spacing.xl,

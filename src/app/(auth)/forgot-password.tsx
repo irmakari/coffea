@@ -10,6 +10,7 @@ import {
   saveNewPassword,
   verifyResetCode,
 } from '@/features/auth/authApi';
+import { PasswordField } from '@/features/auth/PasswordField';
 import { t } from '@/i18n';
 
 // Two steps on one screen: ask for a code by email, then enter the code with
@@ -134,12 +135,11 @@ export default function ForgotPasswordScreen() {
           maxLength={10}
         />
       )}
-      <TextField
+      <PasswordField
         label={t('auth.reset.newPassword')}
         value={password}
         onChangeText={setPassword}
         error={showErrors ? passwordError : undefined}
-        secureTextEntry
         textContentType="newPassword"
         autoComplete="new-password"
         returnKeyType="go"
@@ -152,7 +152,21 @@ export default function ForgotPasswordScreen() {
       ) : null}
       <Button label={t('auth.reset.save')} loading={submitting} onPress={savePassword} />
       {verified ? null : (
-        <Button variant="quiet" label={t('auth.reset.resend')} disabled={submitting} onPress={sendCode} />
+        <>
+          <Button variant="quiet" label={t('auth.reset.resend')} disabled={submitting} onPress={sendCode} />
+          {/* The address is fixed by now; a typo in it is put right from the start. */}
+          <Button
+            variant="quiet"
+            label={t('auth.reset.changeEmail')}
+            disabled={submitting}
+            onPress={() => {
+              setCode('');
+              setShowErrors(false);
+              setFailure(null);
+              setStep('email');
+            }}
+          />
+        </>
       )}
     </AuthScreen>
   );

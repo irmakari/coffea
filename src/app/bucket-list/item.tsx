@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDiscardGuard } from '@/components/navigation/useDiscardGuard';
 import { Button, EmptyState, KeyboardAvoider, LoadingState, ModalHeader, Screen, Text, TextField } from '@/components/ui';
 import { emptyBucketDraft, type BucketDraft, type BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
@@ -33,10 +34,15 @@ function BucketItemForm({ existing }: { existing?: BucketItem }) {
   const insets = useSafeAreaInsets();
   const { add, update, remove } = useBucketList();
 
-  const [draft, setDraft] = useState<BucketDraft>(
+  // What the form opened with, to tell whether anything was changed since.
+  const [initial] = useState<BucketDraft>(
     existing
       ? { name: existing.name, cafe: existing.cafe ?? '', notes: existing.notes ?? '' }
       : emptyBucketDraft,
+  );
+  const [draft, setDraft] = useState(initial);
+  const leave = useDiscardGuard(
+    draft.name !== initial.name || draft.cafe !== initial.cafe || draft.notes !== initial.notes,
   );
   const [busy, setBusy] = useState<'saving' | 'deleting' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +54,7 @@ function BucketItemForm({ existing }: { existing?: BucketItem }) {
     setBusy('saving');
     try {
       await (id ? update(id, draft) : add(draft));
+      leave();
       router.back();
     } catch {
       setError(t('bucketList.form.saveError'));
@@ -61,6 +68,7 @@ function BucketItemForm({ existing }: { existing?: BucketItem }) {
     setBusy('deleting');
     try {
       await remove(id);
+      leave();
       router.back();
     } catch {
       setError(t('bucketList.form.deleteError'));

@@ -1,5 +1,6 @@
 import type { AuthError } from '@supabase/supabase-js';
 
+import { removeAllPhotos } from '@/features/entries/photoStorage';
 import type { TranslationKey } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 
@@ -92,4 +93,21 @@ export async function cancelPasswordReset(): Promise<void> {
 export async function signOut(): Promise<AuthResult> {
   const { error } = await supabase.auth.signOut();
   return error ? { ok: false, message: describe(error) } : { ok: true, value: undefined };
+}
+
+// Removes the account and everything kept under it, for good. Photos go
+// first, through storage; the database then drops the user, and the profile,
+// journal and bucket list go with it. If a step fails the account is still
+// there and the whole thing can be tried again.
+export async function deleteAccount(userId: string): Promise<AuthResult> {
+  try {
+    await removeAllPhotos(userId);
+    const { error } = await supabase.rpc('delete_account');
+    if (error) throw error;
+  } catch {
+    return { ok: false, message: 'profile.delete.error' };
+  }
+  // The session outlives the user it belonged to; drop it from this phone.
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  return { ok: true, value: undefined };
 }

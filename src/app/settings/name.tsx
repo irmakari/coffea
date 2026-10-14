@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDiscardGuard } from '@/components/navigation/useDiscardGuard';
 import { Button, KeyboardAvoider, ModalHeader, Screen, Text, TextField } from '@/components/ui';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
@@ -11,7 +12,9 @@ import { spacing } from '@/theme';
 export default function NameScreen() {
   const insets = useSafeAreaInsets();
   const { profile, setDisplayName } = useProfile();
-  const [name, setName] = useState(profile.displayName ?? '');
+  const [initial] = useState(profile.displayName ?? '');
+  const [name, setName] = useState(initial);
+  const leave = useDiscardGuard(name.trim() !== initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,6 +23,7 @@ export default function NameScreen() {
     setSaving(true);
     try {
       await setDisplayName(name);
+      leave();
       router.back();
     } catch {
       setError(t('settings.name.error'));

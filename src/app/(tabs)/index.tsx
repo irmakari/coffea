@@ -1,5 +1,13 @@
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -27,48 +35,56 @@ function greetingKey(hour: number): TranslationKey {
 }
 
 // The tan block that opens the app: who, when, and the one thing to do.
-function Hero({ count }: { count: number }) {
+function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const now = new Date();
   const greeting = t(greetingKey(now.getHours()));
 
   return (
-    <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
-      {/* Pulling the page down would otherwise open a pale gap above the tan. */}
-      <View style={styles.heroOverscroll} />
-      <View style={contentColumn}>
-        <View style={styles.masthead}>
-          <Text variant="subheading">{t("brand.name")}</Text>
-          <Text variant="caption">{formatDate(now, "day")}</Text>
-        </View>
-
-        <View style={styles.heroBody}>
-          <View style={styles.heroText}>
-            <Text variant="display" accessibilityRole="header">
-              {profile.displayName
-                ? t("home.greetingWithName", {
-                    greeting,
-                    name: profile.displayName,
-                  })
-                : greeting}
-            </Text>
-            <Text style={styles.heroLine}>
-              {count === 0
-                ? t("home.prompt")
-                : count === 1
-                  ? t("home.summary.one")
-                  : t("home.summary.other", { count: formatNumber(count) })}
-            </Text>
+    // The page colour shows in the hero's rounded corners, in front of the
+    // tan that lies behind the top of the page.
+    <View style={styles.heroCorners}>
+      <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
+        <View style={contentColumn}>
+          <View style={styles.masthead}>
+            <Text variant="subheading">{t("brand.name")}</Text>
+            {/* iOS would spin behind the status bar, which the hero runs
+                under, so the hero shows the reload itself. */}
+            {refreshing && Platform.OS === "ios" ? (
+              <ActivityIndicator size="small" color={colors.accentPressed} />
+            ) : (
+              <Text variant="caption">{formatDate(now, "day")}</Text>
+            )}
           </View>
-          <CupMark size={92} />
-        </View>
 
-        <Button
-          label={t("home.logAction")}
-          onPress={() => router.push("/log")}
-          style={styles.heroAction}
-        />
+          <View style={styles.heroBody}>
+            <View style={styles.heroText}>
+              <Text variant="display" accessibilityRole="header">
+                {profile.displayName
+                  ? t("home.greetingWithName", {
+                      greeting,
+                      name: profile.displayName,
+                    })
+                  : greeting}
+              </Text>
+              <Text style={styles.heroLine}>
+                {count === 0
+                  ? t("home.prompt")
+                  : count === 1
+                    ? t("home.summary.one")
+                    : t("home.summary.other", { count: formatNumber(count) })}
+              </Text>
+            </View>
+            <CupMark size={92} />
+          </View>
+
+          <Button
+            label={t("home.logAction")}
+            onPress={() => router.push("/log")}
+            style={styles.heroAction}
+          />
+        </View>
       </View>
     </View>
   );
@@ -77,6 +93,13 @@ function Hero({ count }: { count: number }) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { entries, status, reload } = useEntries();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
 
   const [latest, ...rest] = entries;
   const earlier = rest.slice(0, EARLIER_COUNT);
@@ -86,13 +109,28 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
+      {/* Pulling the page down would otherwise open a pale gap above the tan.
+          It lies behind the list, so the refresh spinner shows on top of it. */}
+      <View style={styles.backdrop} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         // The hero is tan to the very top, behind the status bar.
         contentInsetAdjustmentBehavior="never"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            // Android's spinner drops in below the status bar. The iOS one
+            // has no room of its own up there; the hero stands in for it.
+            tintColor="transparent"
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface}
+            progressViewOffset={insets.top}
+          />
+        }
       >
-        <Hero count={entries.length} />
+        <Hero count={entries.length} refreshing={refreshing} />
 
         {!latest ? (
           <View style={[contentColumn, styles.body]}>
@@ -183,9 +221,19 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: colors.highlight,
   },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: colors.highlight,
+  },
   content: {
     flexGrow: 1,
-    paddingBottom: spacing.xxxl,
+  },
+  heroCorners: {
+    backgroundColor: colors.background,
   },
   hero: {
     paddingHorizontal: spacing.screen,
@@ -194,17 +242,11 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: radii.frame + 6,
     borderBottomRightRadius: radii.frame + 6,
   },
-  heroOverscroll: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: "100%",
-    height: 600,
-    backgroundColor: colors.highlight,
-  },
   masthead: {
+    // As tall as the spinner that takes the date's place during a reload.
+    minHeight: 24,
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     justifyContent: "space-between",
   },
   heroBody: {
@@ -227,7 +269,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.xl + 4,
+    // Opaque down to the end of the page, to keep the tan behind it hidden.
+    paddingBottom: spacing.xxxl,
     gap: spacing.xl + 4,
+    backgroundColor: colors.background,
   },
   emptyCard: {
     gap: spacing.sm,

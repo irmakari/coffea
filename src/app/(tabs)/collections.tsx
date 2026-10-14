@@ -21,8 +21,8 @@ function inPairs(collections: Collection[]): Collection[][] {
 }
 
 export default function CollectionsScreen() {
-  const { entries } = useEntries();
-  const { items } = useBucketList();
+  const { entries, reload: reloadEntries } = useEntries();
+  const { items, reload: reloadBucketList } = useBucketList();
 
   const kept = useMemo(() => [collect(entries, 'favorites'), collect(entries, 'fiveStars')], [entries]);
   const types = useMemo(() => collectBy(entries, 'type'), [entries]);
@@ -31,7 +31,7 @@ export default function CollectionsScreen() {
   const toTry = items.filter((item) => !item.isCompleted).length;
 
   return (
-    <Screen scroll>
+    <Screen scroll onRefresh={() => Promise.all([reloadEntries(), reloadBucketList()])}>
       <ScreenHeader title={t('collections.title')} />
 
       <View style={styles.tracking}>

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { CupMark, Text } from "@/components/ui";
-import { weekdayInitials } from "@/i18n";
+import { formatDate, t, weekdayInitials } from "@/i18n";
 import { colors, radii, spacing } from "@/theme";
 
 import type { Entry } from "./types";
@@ -15,6 +15,8 @@ type MonthCalendarProps = {
   entriesByDay: Map<number, Entry[]>;
   selectedDay: number | null;
   onSelectDay: (day: number | null) => void;
+  // Called for a day without a coffee, to start one on it.
+  onLogDay: (day: number) => void;
 };
 
 // Weeks run Monday to Sunday. Empty slots pad the first and last week.
@@ -45,6 +47,7 @@ export function MonthCalendar({
   entriesByDay,
   selectedDay,
   onSelectDay,
+  onLogDay,
 }: MonthCalendarProps) {
   const weeks = useMemo(() => buildWeeks(month), [month]);
   const initials = useMemo(() => weekdayInitials(), []);
@@ -87,23 +90,37 @@ export function MonthCalendar({
             const entries = entriesByDay.get(day) ?? [];
             const photo = entries.find((entry) => entry.photoUrl);
             const hasCoffee = entries.length > 0;
+            // A coffee cannot be logged ahead of time.
+            const future = today !== null && day > today;
+            const date = formatDate(
+              new Date(month.getFullYear(), month.getMonth(), day),
+              "day",
+            );
 
             return (
               <View key={dayIndex} style={styles.slot}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={String(day)}
+                  accessibilityLabel={
+                    hasCoffee ? date : t("diary.logOn", { day: date })
+                  }
                   accessibilityState={{
                     selected: selectedDay === day,
-                    disabled: !hasCoffee,
+                    disabled: future,
                   }}
-                  disabled={!hasCoffee}
-                  onPress={() => onSelectDay(selectedDay === day ? null : day)}
-                  style={[
+                  disabled={future}
+                  onPress={() =>
+                    hasCoffee
+                      ? onSelectDay(selectedDay === day ? null : day)
+                      : onLogDay(day)
+                  }
+                  style={({ pressed }) => [
                     styles.day,
                     hasCoffee && !photo && styles.dayWithCoffee,
                     today === day && !hasCoffee && styles.today,
                     selectedDay === day && styles.selected,
+                    future && styles.future,
+                    pressed && !hasCoffee && styles.pressed,
                   ]}
                 >
                   {photo?.photoUrl ? (
@@ -131,6 +148,18 @@ export function MonthCalendar({
                       {day}
                     </Text>
                   )}
+                  {/* The picture takes the number's place, so it moves to a corner. */}
+                  {hasCoffee ? (
+                    <View style={styles.number}>
+                      <Text
+                        variant="caption"
+                        maxFontSizeMultiplier={1}
+                        style={styles.numberText}
+                      >
+                        {day}
+                      </Text>
+                    </View>
+                  ) : null}
                   {entries.length > 1 ? (
                     <View style={styles.count}>
                       <Text
@@ -188,13 +217,36 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: colors.accent,
   },
+  future: {
+    opacity: 0.35,
+  },
+  pressed: {
+    backgroundColor: colors.surfacePressed,
+  },
   dayNumber: {
     fontSize: 14,
   },
+  number: {
+    position: "absolute",
+    left: 2,
+    top: 2,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numberText: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  // Opposite the day's number, so the two never meet in a narrow day.
   count: {
     position: "absolute",
     right: 2,
-    top: 2,
+    bottom: 2,
     minWidth: 16,
     height: 16,
     paddingHorizontal: 3,

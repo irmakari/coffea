@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Icon, KeyboardAvoider, Text, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { currencies } from '@/features/profile/currencies';
 import { t } from '@/i18n';
 import { colors, sizes, spacing } from '@/theme';
 
@@ -25,10 +26,17 @@ type EntryFormProps = {
   header?: ReactNode;
   // On a tab the bar below already clears the bottom of the screen.
   aboveTabBar?: boolean;
+  // Told whenever the form starts or stops differing from what it opened
+  // with, so the screen can ask before unsaved changes are thrown away.
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 function hasDetails(draft: EntryDraft) {
   return draft.cafe !== '' || draft.rating !== null || draft.price !== '' || draft.notes !== '';
+}
+
+function differs(draft: EntryDraft, initial: EntryDraft) {
+  return (Object.keys(initial) as (keyof EntryDraft)[]).some((key) => draft[key] !== initial[key]);
 }
 
 export function EntryForm({
@@ -39,13 +47,18 @@ export function EntryForm({
   error,
   header,
   aboveTabBar = false,
+  onDirtyChange,
 }: EntryFormProps) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [draft, setDraft] = useState(initialValues);
+  // What the form opened with. A saved photo's link is renewed whenever the
+  // journal reloads, so later values would look like a change that is not one.
+  const [initial] = useState(initialValues);
+  const [draft, setDraft] = useState(initial);
   const [detailsOpen, setDetailsOpen] = useState(() => hasDetails(initialValues));
   const [moreOpen, setMoreOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
 
   const update = (changes: Partial<EntryDraft>) => setDraft((current) => ({ ...current, ...changes }));
 
@@ -64,13 +77,26 @@ export function EntryForm({
     },
     [],
   );
+  const dirty = differs(draft, initial);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
+
+  // A coffee with a type and no name of its own goes by its type.
+  const typeName =
+    draft.type === 'other' ? draft.customType : draft.type ? t(`coffeeTypes.${draft.type}`) : '';
+  const name = draft.name.trim() || typeName;
   const priceInvalid = Number.isNaN(parsePrice(draft.price));
-  const canSave = draft.name.trim() !== '' && !priceInvalid;
+  const canSave = name !== '' && !priceInvalid;
 
   return (
     <KeyboardAvoider>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: aboveTabBar ? spacing.xl : Math.max(insets.bottom, spacing.lg) + spacing.sm },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -84,7 +110,7 @@ export function EntryForm({
 
         <TextField
           label={t('entry.name.label')}
-          placeholder={t('entry.name.placeholder')}
+          placeholder={typeName || t('entry.name.placeholder')}
           value={draft.name}
           onChangeText={(name) => update({ name })}
           autoCapitalize="words"
@@ -136,6 +162,12 @@ export function EntryForm({
           </View>
         ) : null}
 
+        <DateField
+          label={t('entry.date.label')}
+          value={draft.consumedAt ? new Date(draft.consumedAt) : new Date()}
+          onChange={(date) => update({ consumedAt: date.toISOString() })}
+        />
+
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: detailsOpen }}
@@ -169,14 +201,27 @@ export function EntryForm({
               onChangeText={(price) => update({ price })}
               error={priceInvalid ? t('entry.price.invalid') : undefined}
               suffix={draft.currency}
+              suffixLabel={`${t('entry.price.currency')}, ${draft.currency}`}
+              onSuffixPress={() => setCurrencyOpen((open) => !open)}
               keyboardType="decimal-pad"
               maxLength={10}
             />
-            <DateField
-              label={t('entry.date.label')}
-              value={draft.consumedAt ? new Date(draft.consumedAt) : new Date()}
-              onChange={(date) => update({ consumedAt: date.toISOString() })}
-            />
+            {/* For the one coffee paid for in another currency, as on a trip. */}
+            {currencyOpen ? (
+              <View style={styles.chips} accessibilityRole="radiogroup">
+                {currencies.map((code) => (
+                  <Chip
+                    key={code}
+                    label={code}
+                    selected={draft.currency === code}
+                    onPress={() => {
+                      update({ currency: code });
+                      setCurrencyOpen(false);
+                    }}
+                  />
+                ))}
+              </View>
+            ) : null}
             <TextField
               label={t('entry.notes.label')}
               placeholder={t('entry.notes.placeholder')}
@@ -187,30 +232,37 @@ export function EntryForm({
             />
           </>
         ) : null}
+
+        {/* The last thing on the page, after the details, rather than pinned over it. */}
+        <View style={styles.footer}>
+          {error ? (
+            <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          ) : null}
+          <Button
+            label={submitLabel}
+            disabled={!canSave}
+            loading={submitting}
+            onPress={() => onSubmit({ ...draft, name })}
+          />
+        </View>
       </ScrollView>
 
       <MoreCoffeesSheet
         visible={moreOpen}
         value={draft.type === 'other' ? draft.customType : ''}
         onDone={(customType) => {
-          if (customType) update({ type: 'other', customType });
+          if (customType) {
+            update({ type: 'other', customType });
+          } else if (draft.type === 'other') {
+            // Left empty, the sheet takes back the coffee it had given.
+            update({ type: null, customType: '' });
+          }
           setMoreOpen(false);
         }}
       />
 
-      <View style={[styles.footer, { paddingBottom: aboveTabBar ? spacing.lg : Math.max(insets.bottom, spacing.lg) }]}>
-        {error ? (
-          <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
-            {error}
-          </Text>
-        ) : null}
-        <Button
-          label={submitLabel}
-          disabled={!canSave}
-          loading={submitting}
-          onPress={() => onSubmit({ ...draft, name: draft.name.trim() })}
-        />
-      </View>
     </KeyboardAvoider>
   );
 }
@@ -219,7 +271,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xxl,
     gap: spacing.xl,
   },
   group: {
@@ -243,9 +294,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   footer: {
-    paddingHorizontal: spacing.screen,
-    paddingTop: spacing.md,
     gap: spacing.sm,
-    backgroundColor: colors.background,
   },
 });

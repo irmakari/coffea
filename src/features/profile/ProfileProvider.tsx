@@ -23,6 +23,7 @@ type ProfileState = {
   setDisplayName: (name: string) => Promise<void>;
   // Takes a photo file on the device.
   setAvatar: (localUri: string) => Promise<void>;
+  removeAvatar: () => Promise<void>;
 };
 
 type ProfileRow = {
@@ -96,8 +97,16 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
     return {
       profile,
       setPreferredCurrency: async (currency) => {
-        await save({ preferred_currency: currency });
-        setProfile((current) => ({ ...current, preferredCurrency: currency }));
+        const previous = profile.preferredCurrency;
+        const apply = (value: string) => setProfile((current) => ({ ...current, preferredCurrency: value }));
+        // Show the choice at once and put it back if the save fails.
+        apply(currency);
+        try {
+          await save({ preferred_currency: currency });
+        } catch (error) {
+          apply(previous);
+          throw error;
+        }
       },
       setDisplayName: async (name) => {
         const displayName = name.trim() || null;
@@ -118,6 +127,13 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
         // The file on the device is shown straight away; a stored link is
         // only needed the next time the profile loads.
         setProfile((current) => ({ ...current, avatarPath, avatarUrl: localUri }));
+      },
+      removeAvatar: async () => {
+        const previous = profile.avatarPath;
+        if (!previous) return;
+        await save({ avatar_path: null });
+        await removePhoto(previous);
+        setProfile((current) => ({ ...current, avatarPath: null, avatarUrl: null }));
       },
     };
   }, [profile, userId]);

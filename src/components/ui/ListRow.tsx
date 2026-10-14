@@ -42,7 +42,9 @@ export function ListRow({ label, value, onPress }: ListRowProps) {
 
 export function SectionHeader({ title }: { title: string }) {
   return (
-    <Text variant="eyebrow" color="textMuted" accessibilityRole="header" style={styles.section}>
+    // Mocha, not the paler muted tone: at this size that one is hard to read
+    // on the warm page.
+    <Text variant="eyebrow" color="textSecondary" accessibilityRole="header" style={styles.section}>
       {title}
     </Text>
   );

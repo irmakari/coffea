@@ -1,13 +1,15 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen, ScreenHeader } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
+import { isLogDraftDirty, setLogDraftDirty } from '@/features/entries/logDraft';
 import { emptyDraft, isCoffeeType, type EntryDraft } from '@/features/entries/types';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
+import { successFeedback } from '@/lib/haptics';
 import { spacing } from '@/theme';
 
 // A form that already knows what is being drunk, named after it so that it
@@ -19,6 +21,16 @@ function draftOf(drink: string, currency: string): EntryDraft {
     : { ...draft, name: drink, type: 'other', customType: drink };
 }
 
+// The same form, dated to a day picked in the diary. It keeps the time of
+// day it is now, and never lands in the future.
+function onDay(draft: EntryDraft, day: string): EntryDraft {
+  const date = new Date(Number(day));
+  if (Number.isNaN(date.getTime())) return draft;
+  const now = new Date();
+  date.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  return { ...draft, consumedAt: (date > now ? now : date).toISOString() };
+}
+
 export default function LogCoffeeScreen() {
   const { add } = useEntries();
   const { profile } = useProfile();
@@ -28,22 +40,51 @@ export default function LogCoffeeScreen() {
   // save. Leaving the tab halfway keeps what was typed.
   const [formKey, setFormKey] = useState(0);
 
-  // Set by the tab bar when a coffee is picked from its long-press menu. `at`
-  // changes with every pick; once that pick has been saved it is spent, and
-  // the form after it starts empty.
-  const { drink, at } = useLocalSearchParams<{ drink?: string; at?: string }>();
+  // Set when a coffee is picked from the tab bar's long-press menu, a day
+  // from the diary, or a coffee ticked off the bucket list. `at` changes with
+  // every such start; once that start has been saved it is spent, and the
+  // form after it starts empty.
+  const { drink, day, name, cafe, at } = useLocalSearchParams<{
+    drink?: string;
+    day?: string;
+    name?: string;
+    cafe?: string;
+    at?: string;
+  }>();
   const [spent, setSpent] = useState<string | null>(null);
-  const startWith = drink && at && at !== spent ? drink : null;
+  const started = !!at && at !== spent;
+
+  // A start that was walked away from untouched is spent too. Otherwise the
+  // next coffee logged here would quietly carry its day.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (!at || isLogDraftDirty()) return;
+        setSpent(at);
+        setFormKey((key) => key + 1);
+      },
+      [at],
+    ),
+  );
+
+  let initialValues = emptyDraft(profile.preferredCurrency);
+  if (started && drink) initialValues = draftOf(drink, profile.preferredCurrency);
+  if (started && day) initialValues = onDay(initialValues, day);
+  if (started && name) initialValues = { ...initialValues, name, cafe: cafe ?? '' };
 
   const save = async (draft: EntryDraft) => {
     setError(null);
     setSubmitting(true);
     try {
-      await add(draft);
+      const created = await add(draft);
+      successFeedback();
       setSpent(at ?? null);
       setFormKey((key) => key + 1);
-      // The new coffee is waiting at the top of the home tab.
+      // The saved coffee is shown as it now stands in the journal, which a
+      // backdated one would not be at the top of the home tab. Home goes
+      // underneath, so that is where the way back leads.
       router.navigate('/');
+      router.push({ pathname: '/entry/[id]', params: { id: created.id } });
     } catch {
       setError(t('entry.saveError'));
     } finally {
@@ -60,14 +101,13 @@ export default function LogCoffeeScreen() {
             <ScreenHeader title={t('entry.newTitle')} />
           </View>
         }
-        initialValues={
-          startWith ? draftOf(startWith, profile.preferredCurrency) : emptyDraft(profile.preferredCurrency)
-        }
+        initialValues={initialValues}
         submitLabel={t('entry.save')}
         onSubmit={save}
         submitting={submitting}
         error={error}
         aboveTabBar
+        onDirtyChange={setLogDraftDirty}
       />
     </Screen>
   );

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { CoffeePhoto, CupMark, Icon, Text } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, type TranslationKey } from '@/i18n';
 import { colors, photoRatio, radii, sizes, spacing } from '@/theme';
 
-import { pickPhoto } from './pickPhoto';
+import { askPhotoSource } from './askPhotoSource';
+import { CameraDeniedError, pickPhoto, type PhotoSource } from './pickPhoto';
 
 type PhotoFieldProps = {
   uri: string | null;
@@ -15,22 +16,30 @@ type PhotoFieldProps = {
 };
 
 export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<TranslationKey | null>(null);
   // From opening the picker until the chosen photo is ready to show.
   const [busy, setBusy] = useState(false);
 
-  const choose = async () => {
-    if (busy) return;
-    setFailed(false);
+  const pick = async (source: PhotoSource) => {
+    setFailure(null);
     setBusy(true);
     try {
-      const picked = await pickPhoto();
+      const picked = await pickPhoto(undefined, source);
       if (picked) onChange(picked);
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      if (error instanceof CameraDeniedError) {
+        setFailure('entry.photo.cameraDenied');
+      } else {
+        setFailure(source === 'camera' ? 'entry.photo.cameraError' : 'entry.photo.error');
+      }
     } finally {
       setBusy(false);
     }
+  };
+
+  const choose = () => {
+    if (busy) return;
+    askPhotoSource(t(uri ? 'entry.photo.change' : 'entry.photo.add'), pick);
   };
 
   return (
@@ -82,9 +91,9 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
           ) : null}
         </Pressable>
       )}
-      {failed ? (
+      {failure ? (
         <Text variant="small" color="danger" accessibilityLiveRegion="polite">
-          {t('entry.photo.error')}
+          {t(failure)}
         </Text>
       ) : null}
     </View>
