@@ -4,7 +4,8 @@ import { StyleSheet, type TextInput } from 'react-native';
 
 import { Button, Text, TextField } from '@/components/ui';
 import { AuthScreen } from '@/features/auth/AuthScreen';
-import { isValidEmail, signIn } from '@/features/auth/authApi';
+import { isValidEmail, resendSignUpCode, signIn } from '@/features/auth/authApi';
+import { ConfirmEmail } from '@/features/auth/ConfirmEmail';
 import { PasswordField } from '@/features/auth/PasswordField';
 import { t } from '@/i18n';
 
@@ -14,6 +15,8 @@ export default function SignInScreen() {
   const [showErrors, setShowErrors] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Set when the account exists but its email was never confirmed.
+  const [confirming, setConfirming] = useState(false);
   const passwordField = useRef<TextInput>(null);
 
   const emailError = isValidEmail(email) ? undefined : t('auth.email.invalid');
@@ -27,11 +30,20 @@ export default function SignInScreen() {
     setSubmitting(true);
     const result = await signIn(email, password);
     // On success the root layout swaps to the signed-in screens by itself.
-    if (!result.ok) {
+    if (!result.ok && result.message === 'auth.errors.emailNotConfirmed') {
+      // The first code may be long gone, so a fresh one is sent.
+      await resendSignUpCode(email);
+      setSubmitting(false);
+      setConfirming(true);
+    } else if (!result.ok) {
       setFailure(t(result.message));
       setSubmitting(false);
     }
   };
+
+  if (confirming) {
+    return <ConfirmEmail email={email} onBack={() => setConfirming(false)} />;
+  }
 
   return (
     <AuthScreen
