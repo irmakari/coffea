@@ -6,7 +6,6 @@ import { EmptyState, LoadingState, PageHeader, Screen } from '@/components/ui';
 import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { draftFromEntry, type EntryDraft } from '@/features/entries/types';
-import { useFriends } from '@/features/friends/FriendsProvider';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
 import { successFeedback } from '@/lib/haptics';
@@ -16,7 +15,6 @@ export default function EditCoffeeScreen() {
   const entry = useEntry(id);
   const { status, update } = useEntries();
   const { profile } = useProfile();
-  const { friends } = useFriends();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -48,8 +46,6 @@ export default function EditCoffeeScreen() {
           submitting={submitting}
           error={error}
           onDirtyChange={setDirty}
-          // A shared coffee can always be taken back, friends or not.
-          canShare={friends.length > 0 || entry.isShared}
         />
       ) : status === 'loading' ? (
         <LoadingState />

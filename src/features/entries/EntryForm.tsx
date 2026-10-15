@@ -1,6 +1,5 @@
-import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Icon, KeyboardAvoider, Text, TextField } from '@/components/ui';
@@ -31,9 +30,6 @@ type EntryFormProps = {
   // Told whenever the form starts or stops differing from what it opened
   // with, so the screen can ask before unsaved changes are thrown away.
   onDirtyChange?: (dirty: boolean) => void;
-  // Lets the coffee be shared. Someone with nobody to share with sees the
-  // switch turned off, and the way to add a friend.
-  canShare?: boolean;
 };
 
 const CAFE_SUGGESTIONS = 6;
@@ -72,7 +68,6 @@ export function EntryForm({
   header,
   aboveTabBar = false,
   onDirtyChange,
-  canShare = false,
 }: EntryFormProps) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
@@ -195,40 +190,6 @@ export function EntryForm({
           value={draft.consumedAt ? new Date(draft.consumedAt) : new Date()}
           onChange={(date) => update({ consumedAt: date.toISOString() })}
         />
-
-        <View style={styles.share}>
-          <View style={styles.shareText}>
-            <Text variant="bodyStrong" color={canShare ? 'text' : 'textMuted'}>
-              {t('entry.share.label')}
-            </Text>
-            {canShare ? (
-              <Text variant="small" color="textSecondary">
-                {t('entry.share.hint')}
-              </Text>
-            ) : (
-              <Pressable
-                accessibilityRole="link"
-                onPress={() => router.push('/friends/add')}
-                hitSlop={spacing.sm}
-                style={({ pressed }) => pressed && styles.disclosurePressed}
-              >
-                <Text variant="small" color="textSecondary">
-                  {t('entry.share.noFriends')} <Text variant="small" style={styles.link}>{t('entry.share.addFriends')}</Text>
-                </Text>
-              </Pressable>
-            )}
-          </View>
-          <Switch
-            accessibilityLabel={t('entry.share.label')}
-            accessibilityHint={canShare ? undefined : t('entry.share.noFriends')}
-            disabled={!canShare}
-            value={canShare && draft.isShared}
-            onValueChange={(isShared) => update({ isShared })}
-            trackColor={{ true: colors.accent, false: colors.border }}
-            thumbColor={colors.surface}
-            ios_backgroundColor={colors.border}
-          />
-        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -358,18 +319,6 @@ const styles = StyleSheet.create({
     borderTopWidth: sizes.hairline,
     borderBottomWidth: sizes.hairline,
     borderColor: colors.border,
-  },
-  share: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  shareText: {
-    flex: 1,
-    gap: 2,
-  },
-  link: {
-    textDecorationLine: 'underline',
   },
   disclosurePressed: {
     opacity: 0.6,

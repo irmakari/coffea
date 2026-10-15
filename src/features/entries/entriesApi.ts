@@ -4,7 +4,7 @@ import { createPhotoLinks, finishUpload, isLocalPhoto, removeCoffeePhoto, type S
 import { parsePrice, recognizeType, takesMilk, type Entry, type EntryDraft } from './types';
 
 const COLUMNS =
-  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, consumed_at, price, currency, rating, notes, is_favorite, is_shared';
+  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, consumed_at, price, currency, rating, notes, is_favorite';
 
 type EntryRow = {
   id: string;
@@ -20,7 +20,6 @@ type EntryRow = {
   rating: number | null;
   notes: string | null;
   is_favorite: boolean;
-  is_shared: boolean;
 };
 
 function toEntry(row: EntryRow, photoUrl: string | null): Entry {
@@ -40,7 +39,6 @@ function toEntry(row: EntryRow, photoUrl: string | null): Entry {
     rating: row.rating,
     notes: row.notes,
     isFavorite: row.is_favorite,
-    isShared: row.is_shared,
   };
 }
 
@@ -66,7 +64,9 @@ function fieldsFromDraft(draft: EntryDraft) {
     // A currency is only meaningful beside a price.
     currency: price === null ? null : draft.currency,
     notes: blankToNull(draft.notes),
-    is_shared: draft.isShared,
+    // Sharing with friends was taken out. Saving a coffee also takes back
+    // one that was shared before.
+    is_shared: false,
     // Left out when unset so the database stamps the entry with "now".
     ...(draft.consumedAt ? { consumed_at: draft.consumedAt } : {}),
   };

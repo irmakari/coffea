@@ -88,7 +88,7 @@ export type Entry = {
   // Where the photo lives in private storage, and a temporary link to show it.
   photoPath: string | null;
   photoUrl: string | null;
-  // The smaller copy shown in the friends feed, when there is one.
+  // A smaller copy made for the old friends feed, removed with the photo.
   photoThumbPath: string | null;
   consumedAt: string;
   price: number | null;
@@ -96,8 +96,6 @@ export type Entry = {
   rating: number | null;
   notes: string | null;
   isFavorite: boolean;
-  // Seen by friends in their feed, without the price or notes.
-  isShared: boolean;
 };
 
 // What the entry form edits. Only `name` is required.
@@ -118,10 +116,9 @@ export type EntryDraft = {
   // Null means "now", decided at the moment of saving.
   consumedAt: string | null;
   notes: string;
-  isShared: boolean;
 };
 
-export function emptyDraft(currency: string, isShared = false): EntryDraft {
+export function emptyDraft(currency: string): EntryDraft {
   return {
     name: '',
     type: null,
@@ -134,7 +131,6 @@ export function emptyDraft(currency: string, isShared = false): EntryDraft {
     currency,
     consumedAt: null,
     notes: '',
-    isShared,
   };
 }
 
@@ -163,7 +159,6 @@ export function draftFromEntry(entry: Entry, fallbackCurrency: string): EntryDra
     currency: entry.currency ?? fallbackCurrency,
     consumedAt: entry.consumedAt,
     notes: entry.notes ?? '',
-    isShared: entry.isShared,
   };
 }
 

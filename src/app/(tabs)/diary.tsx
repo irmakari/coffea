@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Button,
   Card,
+  Chip,
   CoffeePhoto,
   EmptyState,
   Icon,
@@ -22,6 +23,14 @@ import {
   SectionHeader,
   Text,
 } from "@/components/ui";
+import { buildAlbum, collectedCount } from "@/features/album/album";
+import { AlbumGrid } from "@/features/album/AlbumGrid";
+import {
+  diaryViews,
+  readDiaryView,
+  saveDiaryView,
+  type DiaryView,
+} from "@/features/album/diaryView";
 import { useEntries } from "@/features/entries/EntriesProvider";
 import { EntryRow } from "@/features/entries/EntryCard";
 import { startLog } from "@/features/entries/logDraft";
@@ -45,6 +54,18 @@ export default function DiaryScreen() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [view, setView] = useState<DiaryView>(readDiaryView);
+  // Home's album card picks the view before it opens this tab.
+  useFocusEffect(
+    useCallback(() => {
+      setView(readDiaryView());
+    }, []),
+  );
+  const chooseView = (next: DiaryView) => {
+    saveDiaryView(next);
+    setView(next);
+  };
+  const album = useMemo(() => buildAlbum(entries), [entries]);
 
   const { monthEntries, entriesByDay } = useMemo(() => {
     const inMonth: Entry[] = [];
@@ -143,81 +164,125 @@ export default function DiaryScreen() {
           />
         }
       >
-        <View style={styles.header}>
-          <Text
-            variant="display"
-            accessibilityRole="header"
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-            style={styles.monthName}
-          >
-            {formatDate(month, "monthName")}
-          </Text>
-          <View style={styles.switcher}>
-            <IconButton
-              icon="chevronLeft"
-              label={t("diary.previousMonth")}
-              onPress={() => changeMonth(-1)}
+        <View style={styles.views} accessibilityRole="radiogroup">
+          {diaryViews.map((option) => (
+            <Chip
+              key={option}
+              label={t(`diary.views.${option}`)}
+              selected={view === option}
+              onPress={() => chooseView(option)}
             />
-            <View style={styles.monthPill}>
-              <Text variant="label">{formatDate(month, "year")}</Text>
-            </View>
-            <View
-              style={isCurrentMonth && styles.disabled}
-              pointerEvents={isCurrentMonth ? "none" : "auto"}
-            >
-              <IconButton
-                icon="chevronRight"
-                label={t("diary.nextMonth")}
-                onPress={() => changeMonth(1)}
-              />
-            </View>
-          </View>
+          ))}
         </View>
 
-        <Pressable
-          accessibilityRole="search"
-          accessibilityLabel={t("search.open")}
-          onPress={() => router.push("/search")}
-          style={({ pressed }) => [styles.search, pressed && styles.pressed]}
-        >
-          <Icon name="search" size={18} color="textMuted" />
-          <Text color="textMuted">{t("search.open")}</Text>
-        </Pressable>
-
-        <Card style={styles.calendarCard}>
-          <MonthCalendar
-            month={month}
-            entriesByDay={entriesByDay}
-            selectedDay={selectedDay}
-            onSelectDay={setSelectedDay}
-            onLogDay={logOn}
-          />
-        </Card>
-
-        <View style={styles.list}>
-          <SectionHeader title={listTitle} />
-          {shown.length > 0 ? (
-            <Card style={styles.listCard}>
-              {shown.map((entry, index) => (
-                <EntryRow
-                  key={entry.id}
-                  entry={entry}
-                  last={index === shown.length - 1}
+        {view === "album" ? (
+          <>
+            <View style={styles.header}>
+              <Text
+                variant="display"
+                accessibilityRole="header"
+                style={styles.monthName}
+              >
+                {t("album.title")}
+              </Text>
+              <View style={styles.monthPill}>
+                <Text variant="label">
+                  {t("album.progress", {
+                    collected: formatNumber(collectedCount(album)),
+                    total: formatNumber(album.length),
+                  })}
+                </Text>
+              </View>
+            </View>
+            <Text color="textSecondary" style={styles.albumIntro}>
+              {t("album.body")}
+            </Text>
+            <View style={styles.album}>
+              <AlbumGrid cards={album} />
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.header}>
+              <Text
+                variant="display"
+                accessibilityRole="header"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                style={styles.monthName}
+              >
+                {formatDate(month, "monthName")}
+              </Text>
+              <View style={styles.switcher}>
+                <IconButton
+                  icon="chevronLeft"
+                  label={t("diary.previousMonth")}
+                  onPress={() => changeMonth(-1)}
                 />
-              ))}
+                <View style={styles.monthPill}>
+                  <Text variant="label">{formatDate(month, "year")}</Text>
+                </View>
+                <View
+                  style={isCurrentMonth && styles.disabled}
+                  pointerEvents={isCurrentMonth ? "none" : "auto"}
+                >
+                  <IconButton
+                    icon="chevronRight"
+                    label={t("diary.nextMonth")}
+                    onPress={() => changeMonth(1)}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <Pressable
+              accessibilityRole="search"
+              accessibilityLabel={t("search.open")}
+              onPress={() => router.push("/search")}
+              style={({ pressed }) => [
+                styles.search,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Icon name="search" size={18} color="textMuted" />
+              <Text color="textMuted">{t("search.open")}</Text>
+            </Pressable>
+
+            <Card style={styles.calendarCard}>
+              <MonthCalendar
+                month={month}
+                entriesByDay={entriesByDay}
+                selectedDay={selectedDay}
+                onSelectDay={setSelectedDay}
+                onLogDay={logOn}
+              />
             </Card>
-          ) : null}
-          {selectedDay !== null ? (
-            <Button
-              variant="quiet"
-              label={t("diary.logOnThisDay")}
-              onPress={() => logOn(selectedDay)}
-              style={styles.logOn}
-            />
-          ) : null}
-        </View>
+
+            <View style={styles.list}>
+              <SectionHeader title={listTitle} />
+              {shown.length > 0 ? (
+                <Card style={styles.listCard}>
+                  {shown.map((entry, index) => (
+                    <EntryRow
+                      key={entry.id}
+                      entry={entry}
+                      last={index === shown.length - 1}
+                    />
+                  ))}
+                </Card>
+              ) : null}
+              {selectedDay !== null ? (
+                <Button
+                  variant="quiet"
+                  label={t("diary.logOnThisDay")}
+                  onPress={() => logOn(selectedDay)}
+                  style={styles.logOn}
+                />
+              ) : null}
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,6 +297,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
+  },
+  views: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  albumIntro: {
+    marginTop: spacing.sm,
+  },
+  album: {
+    marginTop: spacing.xl,
   },
   header: {
     flexDirection: "row",

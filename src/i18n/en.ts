@@ -73,10 +73,45 @@ export const en = {
     dayCoffees: '{{count}} on {{day}}',
     logOn: 'Log a coffee on {{day}}',
     logOnThisDay: 'Log another coffee on this day',
+    views: {
+      calendar: 'Calendar',
+      album: 'Album',
+    },
     empty: {
       title: 'Nothing here yet',
       body: 'Every coffee you log is kept here, newest first.',
       action: 'Log a coffee',
+    },
+  },
+  album: {
+    title: 'Album',
+    progress: '{{collected}} / {{total}}',
+    body: 'Every coffee you try for the first time fills a spot, with a sticker from your photo.',
+    locked: '{{name}}, not collected yet',
+    collected: '{{name}}, collected {{count}} times',
+    home: {
+      title: 'Your coffee album',
+      progress: '{{collected}} of {{total}} coffees collected',
+      empty: 'Try a new coffee to start your album.',
+    },
+  },
+  activity: {
+    albumEyebrow: 'Album',
+    albumTitle: {
+      nobody: 'Nobody has started their album yet',
+      youLead: 'You lead with {{value}}',
+      leads: '{{name}} leads with {{value}}',
+    },
+    albumBody: 'Who has tried the most kinds of coffee, ever.',
+    title: 'Lately',
+    collected: '{{name}} collected {{coffee}}',
+    progress: '#{{count}} in their album',
+    empty: 'When a friend tries a coffee for the first time, it shows up here.',
+    error: 'Friends activity did not load. Pull down to try again.',
+    when: {
+      today: 'Today',
+      yesterday: 'Yesterday',
+      days: '{{count}} days ago',
     },
   },
   collections: {
@@ -426,32 +461,9 @@ export const en = {
     title: 'Friends',
     manage: 'Your friends',
     you: 'You',
-    more: 'More for {{name}}',
     requests: {
       one: '1 friend request',
       other: '{{count}} friend requests',
-    },
-    when: {
-      now: 'Just now',
-      minutes: '{{count}} min ago',
-      hours: '{{count}} h ago',
-      yesterday: 'Yesterday',
-    },
-    cheers: {
-      action: 'Cheers',
-      give: 'Cheers {{name}}',
-      undo: 'Take back your cheers for {{name}}',
-      none: 'No cheers yet',
-      one: '☕ 1 cheers',
-      other: '☕ {{count}} cheers',
-    },
-    empty: {
-      title: 'Nothing poured yet',
-      body: 'When you or your friends share a coffee, it shows up here.',
-    },
-    loadError: {
-      title: 'The feed did not load',
-      body: 'Check your connection and try again.',
     },
   },
   leaderboard: {
@@ -481,6 +493,10 @@ export const en = {
         one: '1 café',
         other: '{{count}} cafés',
       },
+      album: {
+        one: '1 coffee',
+        other: '{{count}} coffees',
+      },
     },
     card: {
       eyebrow: 'This week',
@@ -498,7 +514,7 @@ export const en = {
       body: 'Check your connection and try again.',
     },
     rules:
-      'Weeks run Monday to Sunday. Up to 5 cups a day count, and a coffee logged more than two days late does not. Every coffee counts, shared or not, but friends only see the totals.',
+      'Weeks run Monday to Sunday. Up to 5 cups a day count, and a coffee logged more than two days late does not. Every coffee counts, and friends only see the totals.',
     visibility: {
       label: 'Show me on the leaderboard',
       on: 'Your friends see your weekly totals.',
@@ -507,9 +523,7 @@ export const en = {
     },
   },
   report: {
-    coffee: 'Report this coffee',
     person: 'Report',
-    titleCoffee: 'What is wrong with this coffee?',
     titlePerson: 'Why are you reporting them?',
     reasons: {
       inappropriate: 'Inappropriate photo or text',
@@ -686,13 +700,6 @@ export const en = {
     notes: {
       label: 'Notes',
       placeholder: 'Anything worth remembering',
-    },
-    share: {
-      label: 'Share with friends',
-      hint: 'Friends see it in their feed. Price and notes stay private.',
-      noFriends: 'Add a friend and your coffees can show up in their feed.',
-      addFriends: 'Add friends',
-      shared: 'Shared with friends',
     },
     save: 'Save coffee',
     saveChanges: 'Save changes',

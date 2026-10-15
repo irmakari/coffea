@@ -1,8 +1,9 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -15,10 +16,13 @@ import {
   Card,
   CupMark,
   EmptyState,
+  Icon,
   LoadingState,
   SectionHeader,
   Text,
 } from "@/components/ui";
+import { buildAlbum, collectedCount } from "@/features/album/album";
+import { saveDiaryView } from "@/features/album/diaryView";
 import { useEntries } from "@/features/entries/EntriesProvider";
 import { EntryCard, EntryRow, EntryTile } from "@/features/entries/EntryCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
@@ -87,6 +91,49 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
         </View>
       </View>
     </View>
+  );
+}
+
+// How far the album has come, and the way into it.
+function AlbumCard() {
+  const { entries } = useEntries();
+  const album = useMemo(() => buildAlbum(entries), [entries]);
+  const collected = collectedCount(album);
+
+  const open = () => {
+    saveDiaryView("album");
+    router.navigate("/diary");
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={open}
+      style={({ pressed }) => pressed && styles.pressed}
+    >
+      <Card style={styles.albumCard}>
+        <View style={styles.albumText}>
+          <Text variant="subheading">{t("album.home.title")}</Text>
+          <Text variant="small" color="textSecondary">
+            {collected === 0
+              ? t("album.home.empty")
+              : t("album.home.progress", {
+                  collected: formatNumber(collected),
+                  total: formatNumber(album.length),
+                })}
+          </Text>
+          <View style={styles.albumTrack}>
+            <View
+              style={[
+                styles.albumFill,
+                { width: `${(collected / album.length) * 100}%` },
+              ]}
+            />
+          </View>
+        </View>
+        <Icon name="chevronRight" size={16} color="textMuted" />
+      </Card>
+    </Pressable>
   );
 }
 
@@ -161,6 +208,8 @@ export default function HomeScreen() {
               <SectionHeader title={t("home.latest")} />
               <EntryCard entry={latest} />
             </View>
+
+            <AlbumCard />
 
             {favorites.length > 0 ? (
               <View>
@@ -286,6 +335,30 @@ const styles = StyleSheet.create({
   },
   listCard: {
     paddingVertical: spacing.xs,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  albumCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+  },
+  albumText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  albumTrack: {
+    height: 6,
+    marginTop: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.border,
+    overflow: "hidden",
+  },
+  albumFill: {
+    height: "100%",
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent,
   },
   openDiary: {
     marginTop: spacing.xs,
