@@ -1,12 +1,14 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Button, Card, Chip, CoffeePhoto, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
+import { Button, Card, Chip, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryRow } from '@/features/entries/EntryCard';
 import { isCoffeeType } from '@/features/entries/types';
 import { totalCaffeine } from '@/features/stats/caffeine';
+import { shelvesFor } from '@/features/stats/shelves';
+import { ledgeColor, StickerShelf } from '@/features/stats/StickerShelf';
 import {
   computeStats,
   entriesInPeriod,
@@ -16,8 +18,6 @@ import {
 } from '@/features/stats/stats';
 import { formatCurrency, formatNumber, t } from '@/i18n';
 import { colors, fonts, spacing } from '@/theme';
-
-const SHELF_COUNT = 12;
 
 function times(count: number) {
   return count === 1 ? t('stats.times.one') : t('stats.times.other', { count: formatNumber(count) });
@@ -53,7 +53,7 @@ export default function StatsScreen() {
   const inPeriod = useMemo(() => entriesInPeriod(entries, period), [entries, period]);
   const stats = useMemo(() => computeStats(inPeriod), [inPeriod]);
 
-  const withPhoto = inPeriod.filter((entry) => entry.photoUrl).slice(0, SHELF_COUNT);
+  const shelves = useMemo(() => shelvesFor(inPeriod, period), [inPeriod, period]);
   const caffeine = totalCaffeine(inPeriod);
   const favorites = inPeriod.filter((entry) => entry.isFavorite).length;
   const rated = inPeriod.filter((entry) => entry.rating !== null);
@@ -74,6 +74,20 @@ export default function StatsScreen() {
           />
         ))}
       </View>
+
+      {shelves.length > 0 ? (
+        <View style={styles.shelves}>
+          {shelves.map((shelf, index) => (
+            <StickerShelf
+              key={shelf.key}
+              title={shelf.title}
+              detail={shelf.detail}
+              entries={shelf.entries}
+              color={ledgeColor(index)}
+            />
+          ))}
+        </View>
+      ) : null}
 
       {period === 'year' && stats.total > 0 ? (
         <Button variant="secondary" label={t('year.open')} onPress={() => router.push('/year')} style={styles.card} />
@@ -162,35 +176,6 @@ export default function StatsScreen() {
             </View>
           ) : null}
 
-          {withPhoto.length > 0 ? (
-            <View style={styles.section}>
-              <SectionHeader title={t('stats.photos')} />
-              <Card padded={false}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.shelf}
-                >
-                  {withPhoto.map((entry) => (
-                    <Pressable
-                      key={entry.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={entry.name}
-                      onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}
-                      style={({ pressed }) => pressed && styles.pressed}
-                    >
-                      <CoffeePhoto
-                        uri={entry.photoUrl}
-                        cacheKey={entry.photoPath}
-                        ratio="portrait"
-                        style={styles.shelfPhoto}
-                      />
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </Card>
-            </View>
-          ) : null}
         </>
       )}
     </Screen>
@@ -198,6 +183,10 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
+  shelves: {
+    marginTop: spacing.lg,
+    gap: spacing.xl,
+  },
   periods: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -206,17 +195,6 @@ const styles = StyleSheet.create({
   },
   card: {
     marginTop: spacing.md,
-  },
-  shelf: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  shelfPhoto: {
-    width: 76,
-    borderRadius: 16,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   pair: {
     flexDirection: 'row',

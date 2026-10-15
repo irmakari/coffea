@@ -344,7 +344,12 @@ export const en = {
       note: 'An estimate from each coffee type. Real cups vary.',
     },
     topRated: 'Highest rated',
-    photos: 'Photos',
+    shelf: {
+      week: 'This week',
+      month: 'This month',
+      back: 'Scroll back',
+      forward: 'Scroll forward',
+    },
     empty: {
       title: 'Numbers come later',
       body: 'Log a few coffees and this page will start to tell you about your habits.',
