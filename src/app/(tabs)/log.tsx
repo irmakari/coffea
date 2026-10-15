@@ -7,6 +7,7 @@ import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { isLogDraftDirty, setLogDraftDirty } from '@/features/entries/logDraft';
 import { askForReviewAfterSaving } from '@/features/entries/reviewPrompt';
+import { useFriends } from '@/features/friends/FriendsProvider';
 import { emptyDraft, isCoffeeType, type EntryDraft } from '@/features/entries/types';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
@@ -15,8 +16,8 @@ import { spacing } from '@/theme';
 
 // A form that already knows what is being drunk, named after it so that it
 // can be saved as it stands.
-function draftOf(drink: string, currency: string): EntryDraft {
-  const draft = emptyDraft(currency);
+function draftOf(drink: string, currency: string, isShared: boolean): EntryDraft {
+  const draft = emptyDraft(currency, isShared);
   return isCoffeeType(drink)
     ? { ...draft, name: t(`coffeeTypes.${drink}`), type: drink }
     : { ...draft, name: drink, type: 'other', customType: drink };
@@ -34,7 +35,9 @@ function onDay(draft: EntryDraft, day: string): EntryDraft {
 
 export default function LogCoffeeScreen() {
   const { add, entries } = useEntries();
-  const { profile } = useProfile();
+  const { profile, setShareByDefault } = useProfile();
+  const { friends } = useFriends();
+  const canShare = friends.length > 0;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // A tab stays mounted, so the form is swapped for an empty one after each
@@ -68,8 +71,8 @@ export default function LogCoffeeScreen() {
     ),
   );
 
-  let initialValues = emptyDraft(profile.preferredCurrency);
-  if (started && drink) initialValues = draftOf(drink, profile.preferredCurrency);
+  let initialValues = emptyDraft(profile.preferredCurrency, profile.shareByDefault);
+  if (started && drink) initialValues = draftOf(drink, profile.preferredCurrency, profile.shareByDefault);
   if (started && day) initialValues = onDay(initialValues, day);
   if (started && name) initialValues = { ...initialValues, name, cafe: cafe ?? '' };
 
@@ -77,8 +80,14 @@ export default function LogCoffeeScreen() {
     setError(null);
     setSubmitting(true);
     try {
-      const created = await add(draft);
+      // With no friends yet, nothing is shared, so friends added later do
+      // not find old coffees in their feed.
+      const created = await add({ ...draft, isShared: canShare && draft.isShared });
       successFeedback();
+      // The next coffee starts the way this one was saved.
+      if (canShare && draft.isShared !== profile.shareByDefault) {
+        setShareByDefault(draft.isShared).catch(() => {});
+      }
       setSpent(at ?? null);
       setFormKey((key) => key + 1);
       // The saved coffee is shown as it now stands in the journal, which a
@@ -111,6 +120,7 @@ export default function LogCoffeeScreen() {
         error={error}
         aboveTabBar
         onDirtyChange={setLogDraftDirty}
+        canShare={canShare}
       />
     </Screen>
   );

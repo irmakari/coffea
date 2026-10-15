@@ -7,10 +7,17 @@ import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BucketListProvider } from '@/features/bucketList/BucketListProvider';
 import { EntriesProvider } from '@/features/entries/EntriesProvider';
+import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { ProfileProvider } from '@/features/profile/ProfileProvider';
 import { colors, fontAssets } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// A page opened from a link, such as an invite, has the tabs beneath it, so
+// closing it lands somewhere instead of nowhere.
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 export default function RootLayout() {
   return (
@@ -18,7 +25,9 @@ export default function RootLayout() {
       <EntriesProvider>
         <BucketListProvider>
           <ProfileProvider>
-            <RootNavigator />
+            <FriendsProvider>
+              <RootNavigator />
+            </FriendsProvider>
           </ProfileProvider>
         </BucketListProvider>
       </EntriesProvider>
@@ -49,14 +58,21 @@ function RootNavigator() {
           <Stack.Screen name="entry/[id]/index" />
           <Stack.Screen name="entry/[id]/edit" />
           <Stack.Screen name="entry/[id]/share" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="collections" />
           <Stack.Screen name="collection" />
           <Stack.Screen name="stats" />
+          <Stack.Screen name="leaderboard" />
           <Stack.Screen name="wheel" />
           <Stack.Screen name="year" />
           <Stack.Screen name="search" />
           <Stack.Screen name="settings/currency" />
           <Stack.Screen name="settings/cup" />
           <Stack.Screen name="settings/name" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="settings/username" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="friends/manage" />
+          <Stack.Screen name="friends/add" />
+          <Stack.Screen name="friends/blocked" />
+          <Stack.Screen name="add/[username]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bucket-list/index" />
           <Stack.Screen name="bucket-list/item" options={{ presentation: 'modal' }} />
         </Stack.Protected>

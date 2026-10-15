@@ -9,8 +9,17 @@ import { DEFAULT_CURRENCY } from './currencies';
 // Passed to `pickPhoto`, so the avatar is already this small when it gets here.
 export const AVATAR_SIZE = 480;
 
+// Thrown by `setUsername` when someone else already has the name.
+export class UsernameTakenError extends Error {}
+
 type Profile = {
   displayName: string | null;
+  // How friends find this account. Missing until the user picks one.
+  username: string | null;
+  // Whether the log form starts with sharing on: the last choice made there.
+  shareByDefault: boolean;
+  // Whether friends see this account on their weekly leaderboard.
+  onLeaderboard: boolean;
   preferredCurrency: string;
   // Where the photo lives in private storage, and a link to show it.
   avatarPath: string | null;
@@ -21,6 +30,10 @@ type ProfileState = {
   profile: Profile;
   setPreferredCurrency: (currency: string) => Promise<void>;
   setDisplayName: (name: string) => Promise<void>;
+  // Takes the username as stored; see `normalizeUsername`.
+  setUsername: (username: string) => Promise<void>;
+  setShareByDefault: (value: boolean) => Promise<void>;
+  setOnLeaderboard: (value: boolean) => Promise<void>;
   // Takes a photo file on the device.
   setAvatar: (localUri: string) => Promise<void>;
   removeAvatar: () => Promise<void>;
@@ -28,12 +41,18 @@ type ProfileState = {
 
 type ProfileRow = {
   display_name: string | null;
+  username: string | null;
+  share_by_default: boolean;
+  on_leaderboard: boolean;
   preferred_currency: string;
   avatar_path: string | null;
 };
 
 const fallback: Profile = {
   displayName: null,
+  username: null,
+  shareByDefault: true,
+  onLeaderboard: true,
   preferredCurrency: DEFAULT_CURRENCY,
   avatarPath: null,
   avatarUrl: null,
@@ -56,7 +75,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('display_name, preferred_currency, avatar_path')
+    .select('display_name, username, share_by_default, on_leaderboard, preferred_currency, avatar_path')
     .eq('id', userId)
     .maybeSingle<ProfileRow>();
   if (!data) return null;
@@ -64,6 +83,9 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   const links = data.avatar_path ? await createPhotoLinks([data.avatar_path]).catch(() => null) : null;
   return {
     displayName: data.display_name,
+    username: data.username,
+    shareByDefault: data.share_by_default,
+    onLeaderboard: data.on_leaderboard,
     preferredCurrency: data.preferred_currency,
     avatarPath: data.avatar_path,
     avatarUrl: (data.avatar_path && links?.get(data.avatar_path)) || null,
@@ -112,6 +134,32 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
         const displayName = name.trim() || null;
         await save({ display_name: displayName });
         setProfile((current) => ({ ...current, displayName }));
+      },
+      setUsername: async (username) => {
+        try {
+          await save({ username });
+        } catch (error) {
+          // Postgres reports a duplicate in a unique index this way.
+          if ((error as { code?: string }).code === '23505') throw new UsernameTakenError();
+          throw error;
+        }
+        setProfile((current) => ({ ...current, username }));
+      },
+      setOnLeaderboard: async (onLeaderboard) => {
+        const previous = profile.onLeaderboard;
+        const apply = (value: boolean) => setProfile((current) => ({ ...current, onLeaderboard: value }));
+        // Show the choice at once and put it back if the save fails.
+        apply(onLeaderboard);
+        try {
+          await save({ on_leaderboard: onLeaderboard });
+        } catch (error) {
+          apply(previous);
+          throw error;
+        }
+      },
+      setShareByDefault: async (shareByDefault) => {
+        setProfile((current) => ({ ...current, shareByDefault }));
+        await save({ share_by_default: shareByDefault });
       },
       setAvatar: async (localUri) => {
         if (!userId) throw new Error('Not signed in');

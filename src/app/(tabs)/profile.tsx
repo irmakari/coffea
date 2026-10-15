@@ -156,6 +156,11 @@ export default function ProfileScreen() {
           <Text variant="title" accessibilityRole="header" numberOfLines={2}>
             {profile.displayName ?? t("profile.title")}
           </Text>
+          {profile.username ? (
+            <Text variant="small" color="textSecondary" numberOfLines={1}>
+              @{profile.username}
+            </Text>
+          ) : null}
           {email ? (
             <Text variant="small" color="textSecondary" numberOfLines={1}>
               {email}
@@ -179,6 +184,10 @@ export default function ProfileScreen() {
         <SectionHeader title={t("profile.journal")} />
         <Card style={styles.rows}>
           <View style={styles.rowsInner}>
+            <ListRow
+              label={t("profile.collections")}
+              onPress={() => router.push("/collections")}
+            />
             <ListRow
               label={t("profile.stats")}
               onPress={() => router.push("/stats")}
@@ -213,6 +222,11 @@ export default function ProfileScreen() {
               label={t("profile.name")}
               value={profile.displayName ?? undefined}
               onPress={() => router.push("/settings/name")}
+            />
+            <ListRow
+              label={t("profile.username")}
+              value={profile.username ? `@${profile.username}` : undefined}
+              onPress={() => router.push("/settings/username")}
             />
             <ListRow label={t("profile.photo")} onPress={changePhoto} />
           </View>

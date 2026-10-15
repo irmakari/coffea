@@ -13,7 +13,7 @@ import { colors, contentColumn, radii, sizes, spacing } from '@/theme';
 const tabs: Record<string, { icon: IconName; label: TranslationKey }> = {
   index: { icon: 'home', label: 'tabs.home' },
   diary: { icon: 'diary', label: 'tabs.diary' },
-  collections: { icon: 'collections', label: 'tabs.collections' },
+  friends: { icon: 'friends', label: 'tabs.friends' },
   profile: { icon: 'profile', label: 'tabs.profile' },
 };
 
