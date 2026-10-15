@@ -73,10 +73,26 @@ export const en = {
     dayCoffees: '{{count}} on {{day}}',
     logOn: 'Log a coffee on {{day}}',
     logOnThisDay: 'Log another coffee on this day',
+    views: {
+      calendar: 'Calendar',
+      album: 'Album',
+    },
     empty: {
       title: 'Nothing here yet',
       body: 'Every coffee you log is kept here, newest first.',
       action: 'Log a coffee',
+    },
+  },
+  album: {
+    title: 'Album',
+    progress: '{{collected}} / {{total}}',
+    body: 'Every coffee you try for the first time fills a spot, with a sticker from your photo.',
+    locked: '{{name}}, not collected yet',
+    collected: '{{name}}, collected {{count}} times',
+    home: {
+      title: 'Your coffee album',
+      progress: '{{collected}} of {{total}} coffees collected',
+      empty: 'Try a new coffee to start your album.',
     },
   },
   collections: {
