@@ -62,6 +62,8 @@ function RootNavigator() {
           <Stack.Screen name="collection" />
           <Stack.Screen name="stats" />
           <Stack.Screen name="leaderboard" />
+          <Stack.Screen name="wheel" />
+          <Stack.Screen name="year" />
           <Stack.Screen name="search" />
           <Stack.Screen name="settings/currency" />
           <Stack.Screen name="settings/cup" />

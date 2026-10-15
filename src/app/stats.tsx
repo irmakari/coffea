@@ -2,10 +2,11 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Card, Chip, CoffeePhoto, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
+import { Button, Card, Chip, CoffeePhoto, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryRow } from '@/features/entries/EntryCard';
 import { isCoffeeType } from '@/features/entries/types';
+import { totalCaffeine } from '@/features/stats/caffeine';
 import {
   computeStats,
   entriesInPeriod,
@@ -53,6 +54,7 @@ export default function StatsScreen() {
   const stats = useMemo(() => computeStats(inPeriod), [inPeriod]);
 
   const withPhoto = inPeriod.filter((entry) => entry.photoUrl).slice(0, SHELF_COUNT);
+  const caffeine = totalCaffeine(inPeriod);
   const favorites = inPeriod.filter((entry) => entry.isFavorite).length;
   const rated = inPeriod.filter((entry) => entry.rating !== null);
   const averageRating =
@@ -73,6 +75,10 @@ export default function StatsScreen() {
         ))}
       </View>
 
+      {period === 'year' && stats.total > 0 ? (
+        <Button variant="secondary" label={t('year.open')} onPress={() => router.push('/year')} style={styles.card} />
+      ) : null}
+
       {stats.total === 0 ? (
         <Card style={styles.card}>
           <Text color="textSecondary">{entries.length === 0 ? t('stats.empty.body') : t('stats.periodEmpty')}</Text>
@@ -88,6 +94,19 @@ export default function StatsScreen() {
                 <Figure label={t('stats.favorites')} value={formatNumber(favorites)} />
               )}
             </View>
+          </Card>
+
+          <Card style={styles.card}>
+            <View style={styles.pair}>
+              <Figure label={t('stats.caffeine.total')} value={t('stats.caffeine.mg', { mg: formatNumber(caffeine) })} />
+              <Figure
+                label={t('stats.caffeine.perDay')}
+                value={t('stats.caffeine.mg', { mg: formatNumber(Math.round(caffeine / Math.max(stats.activeDays, 1))) })}
+              />
+            </View>
+            <Text variant="caption" color="textMuted" style={styles.note}>
+              {t('stats.caffeine.note')}
+            </Text>
           </Card>
 
           {stats.topType || stats.topCafe ? (

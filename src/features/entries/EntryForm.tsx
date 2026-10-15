@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { t } from '@/i18n';
 import { colors, sizes, spacing } from '@/theme';
 
 import { DateField } from './DateField';
+import { useEntries } from './EntriesProvider';
 import { MoreCoffeesSheet } from './MoreCoffeesSheet';
 import { PhotoField } from './PhotoField';
 import { cancelUpload, isLocalPhoto, startUpload } from './photoStorage';
@@ -35,6 +36,25 @@ type EntryFormProps = {
   canShare?: boolean;
 };
 
+const CAFE_SUGGESTIONS = 6;
+
+// Cafés from the journal, most recently visited first, written as they were
+// first saved. Home always comes first, for coffees made in the kitchen.
+function cafeSuggestions(cafes: (string | null)[], typed: string): string[] {
+  const seen = new Map<string, string>();
+  const home = t('entry.cafe.home');
+  seen.set(home.toLowerCase(), home);
+  for (const cafe of cafes) {
+    const label = cafe?.trim();
+    if (label && !seen.has(label.toLowerCase())) seen.set(label.toLowerCase(), label);
+  }
+  const query = typed.trim().toLowerCase();
+  return [...seen.entries()]
+    .filter(([key]) => key !== query && key.includes(query))
+    .slice(0, CAFE_SUGGESTIONS)
+    .map(([, label]) => label);
+}
+
 function hasDetails(draft: EntryDraft) {
   return draft.cafe !== '' || draft.rating !== null || draft.price !== '' || draft.notes !== '';
 }
@@ -57,6 +77,7 @@ export function EntryForm({
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const userId = session?.user.id;
+  const { entries } = useEntries();
   // What the form opened with. A saved photo's link is renewed whenever the
   // journal reloads, so later values would look like a change that is not one.
   const [initial] = useState(initialValues);
@@ -92,6 +113,8 @@ export function EntryForm({
   const typeName =
     draft.type === 'other' ? draft.customType : draft.type ? t(`coffeeTypes.${draft.type}`) : '';
   const name = draft.name.trim() || typeName;
+  const cafes = useMemo(() => entries.map((entry) => entry.cafe), [entries]);
+  const suggestions = cafeSuggestions(cafes, draft.cafe);
   const priceInvalid = Number.isNaN(parsePrice(draft.price));
   const canSave = name !== '' && !priceInvalid;
 
@@ -227,6 +250,13 @@ export function EntryForm({
               autoCapitalize="words"
               maxLength={80}
             />
+            {suggestions.length > 0 ? (
+              <View style={styles.chips}>
+                {suggestions.map((cafe) => (
+                  <Chip key={cafe} label={cafe} selected={false} onPress={() => update({ cafe })} />
+                ))}
+              </View>
+            ) : null}
             <View style={styles.group}>
               <Text variant="label" color="textSecondary">
                 {t('entry.rating.label')}
