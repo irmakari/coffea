@@ -6,6 +6,7 @@ import { Screen, ScreenHeader } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { isLogDraftDirty, setLogDraftDirty } from '@/features/entries/logDraft';
+import { askForReviewAfterSaving } from '@/features/entries/reviewPrompt';
 import { emptyDraft, isCoffeeType, type EntryDraft } from '@/features/entries/types';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
@@ -32,7 +33,7 @@ function onDay(draft: EntryDraft, day: string): EntryDraft {
 }
 
 export default function LogCoffeeScreen() {
-  const { add } = useEntries();
+  const { add, entries } = useEntries();
   const { profile } = useProfile();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +86,8 @@ export default function LogCoffeeScreen() {
       // underneath, so that is where the way back leads.
       router.navigate('/');
       router.push({ pathname: '/entry/[id]', params: { id: created.id } });
+      // The coffee just saved is not in `entries` yet, hence the one added.
+      askForReviewAfterSaving(entries.length + 1);
     } catch {
       setError(t('entry.saveError'));
     } finally {

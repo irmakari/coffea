@@ -6,6 +6,7 @@ import { CupMark, Text } from "@/components/ui";
 import { formatDate, t, weekdayInitials } from "@/i18n";
 import { colors, radii, spacing } from "@/theme";
 
+import { useSticker } from "./sticker";
 import type { Entry } from "./types";
 
 type MonthCalendarProps = {
@@ -123,17 +124,8 @@ export function MonthCalendar({
                     pressed && !hasCoffee && styles.pressed,
                   ]}
                 >
-                  {photo?.photoUrl ? (
-                    <Image
-                      source={
-                        photo.photoPath
-                          ? { uri: photo.photoUrl, cacheKey: photo.photoPath }
-                          : { uri: photo.photoUrl }
-                      }
-                      contentFit="cover"
-                      transition={150}
-                      style={StyleSheet.absoluteFill}
-                    />
+                  {photo ? (
+                    <DayPhoto entry={photo} />
                   ) : hasCoffee ? (
                     <CupMark
                       drink={entries.find((entry) => entry.type)?.type}
@@ -181,6 +173,38 @@ export function MonthCalendar({
   );
 }
 
+// The day's coffee lifted out of its photo, standing on the day like a
+// sticker. The photo itself shows while the sticker is made, and stays when
+// none can be.
+function DayPhoto({ entry }: { entry: Entry }) {
+  const sticker = useSticker(entry.photoUrl, entry.photoPath);
+
+  if (sticker) {
+    return (
+      <View style={styles.stickerBackdrop}>
+        <Image
+          source={{ uri: sticker }}
+          contentFit="contain"
+          transition={200}
+          style={styles.sticker}
+        />
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={
+        entry.photoPath
+          ? { uri: entry.photoUrl ?? undefined, cacheKey: entry.photoPath }
+          : { uri: entry.photoUrl ?? undefined }
+      }
+      contentFit="cover"
+      transition={150}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   calendar: {
     gap: GAP,
@@ -222,6 +246,19 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  stickerBackdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: colors.highlight,
+    padding: 3,
+    paddingTop: 14,
+  },
+  sticker: {
+    flex: 1,
   },
   dayNumber: {
     fontSize: 14,

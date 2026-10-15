@@ -184,6 +184,10 @@ export default function ProfileScreen() {
               onPress={() => router.push("/stats")}
             />
             <ListRow
+              label={t("profile.wheel")}
+              onPress={() => router.push("/wheel")}
+            />
+            <ListRow
               label={t("profile.currency")}
               value={profile.preferredCurrency}
               onPress={() => router.push("/settings/currency")}
