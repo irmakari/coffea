@@ -41,8 +41,8 @@ function buildWeeks(month: Date): (number | null)[][] {
 
 const GAP = spacing.sm - 2;
 
-// A month at a glance: each day you had a coffee shows its photograph, or
-// failing that a drawing of what was drunk.
+// A month at a glance, like a sticker album: each day you had a coffee
+// shows the cup lifted out of its photo, else the photo or a drawing.
 export function MonthCalendar({
   month,
   entriesByDay,
@@ -117,19 +117,18 @@ export function MonthCalendar({
                   }
                   style={({ pressed }) => [
                     styles.day,
-                    hasCoffee && !photo && styles.dayWithCoffee,
                     today === day && !hasCoffee && styles.today,
                     selectedDay === day && styles.selected,
                     future && styles.future,
                     pressed && !hasCoffee && styles.pressed,
                   ]}
                 >
-                  {photo ? (
-                    <DayPhoto entry={photo} />
-                  ) : hasCoffee ? (
-                    <CupMark
+                  {hasCoffee ? (
+                    <DayFace
+                      day={day}
+                      photo={photo}
                       drink={entries.find((entry) => entry.type)?.type}
-                      size={cupSize}
+                      cupSize={cupSize}
                     />
                   ) : (
                     <Text
@@ -140,18 +139,6 @@ export function MonthCalendar({
                       {day}
                     </Text>
                   )}
-                  {/* The picture takes the number's place, so it moves to a corner. */}
-                  {hasCoffee ? (
-                    <View style={styles.number}>
-                      <Text
-                        variant="caption"
-                        maxFontSizeMultiplier={1}
-                        style={styles.numberText}
-                      >
-                        {day}
-                      </Text>
-                    </View>
-                  ) : null}
                   {entries.length > 1 ? (
                     <View style={styles.count}>
                       <Text
@@ -173,35 +160,59 @@ export function MonthCalendar({
   );
 }
 
-// The day's coffee lifted out of its photo, standing on the day like a
-// sticker. The photo itself shows while the sticker is made, and stays when
-// none can be.
-function DayPhoto({ entry }: { entry: Entry }) {
-  const sticker = useSticker(entry.photoUrl, entry.photoPath);
+// A day with a coffee. A sticker stands on the day by itself, the way a
+// sticker album fills a page; a photo with no sticker, or a drawing for a
+// coffee with no photo, keeps the day's number in a corner.
+function DayFace({
+  day,
+  photo,
+  drink,
+  cupSize,
+}: {
+  day: number;
+  photo: Entry | undefined;
+  drink: string | null | undefined;
+  cupSize: number;
+}) {
+  const sticker = useSticker(photo?.photoUrl ?? null, photo?.photoPath ?? null);
 
   if (sticker) {
     return (
-      <View style={styles.stickerBackdrop}>
-        <Image
-          source={{ uri: sticker }}
-          contentFit="contain"
-          transition={200}
-          style={styles.sticker}
-        />
-      </View>
+      <Image
+        source={{ uri: sticker }}
+        contentFit="contain"
+        transition={200}
+        style={styles.sticker}
+      />
     );
   }
+
   return (
-    <Image
-      source={
-        entry.photoPath
-          ? { uri: entry.photoUrl ?? undefined, cacheKey: entry.photoPath }
-          : { uri: entry.photoUrl ?? undefined }
-      }
-      contentFit="cover"
-      transition={150}
-      style={StyleSheet.absoluteFill}
-    />
+    <>
+      {photo ? (
+        <Image
+          source={
+            photo.photoPath
+              ? { uri: photo.photoUrl ?? undefined, cacheKey: photo.photoPath }
+              : { uri: photo.photoUrl ?? undefined }
+          }
+          contentFit="cover"
+          transition={150}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <CupMark drink={drink} size={cupSize} />
+      )}
+      <View style={styles.number}>
+        <Text
+          variant="caption"
+          maxFontSizeMultiplier={1}
+          style={styles.numberText}
+        >
+          {day}
+        </Text>
+      </View>
+    </>
   );
 }
 
@@ -223,7 +234,7 @@ const styles = StyleSheet.create({
   },
   day: {
     width: "100%",
-    aspectRatio: 0.82,
+    aspectRatio: 0.86,
     borderWidth: 2,
     borderColor: "transparent",
     borderRadius: radii.control - 2,
@@ -231,9 +242,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-  },
-  dayWithCoffee: {
-    backgroundColor: colors.highlight,
   },
   today: {
     borderColor: colors.borderStrong,
@@ -247,18 +255,12 @@ const styles = StyleSheet.create({
   pressed: {
     backgroundColor: colors.surfacePressed,
   },
-  stickerBackdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: colors.highlight,
-    padding: 3,
-    paddingTop: 14,
-  },
   sticker: {
-    flex: 1,
+    position: "absolute",
+    top: 4,
+    right: 4,
+    bottom: 4,
+    left: 4,
   },
   dayNumber: {
     fontSize: 14,
