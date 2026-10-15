@@ -27,7 +27,7 @@ function Silhouette() {
 // A collected coffee: the sticker of its newest photo when there is one,
 // else the drawing of the drink.
 function Collected({ card }: { card: AlbumCard }) {
-  const entry = card.latest;
+  const entry = card.withPhoto;
   const sticker = useSticker(entry?.photoUrl ?? null, entry?.photoPath ?? null);
   if (sticker) {
     return <Image source={{ uri: sticker }} contentFit="contain" transition={200} style={styles.sticker} />;
