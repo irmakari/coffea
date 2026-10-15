@@ -52,6 +52,10 @@ export const en = {
       other: '{{count}} coffees in your journal',
     },
     latest: 'Latest',
+    when: {
+      today: 'Today, {{time}}',
+      yesterday: 'Yesterday, {{time}}',
+    },
     earlier: 'Earlier',
     openDiary: 'See the whole diary',
     favorites: 'Favorites',
@@ -496,6 +500,17 @@ export const en = {
       album: {
         one: '1 coffee',
         other: '{{count}} coffees',
+      },
+    },
+    board: {
+      tabs: {
+        week: 'This week',
+        album: 'Album',
+      },
+      none: 'Not on the board',
+      hint: {
+        week: 'Your place among friends this week.',
+        album: 'Kinds of coffee collected, ever.',
       },
     },
     card: {

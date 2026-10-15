@@ -4,11 +4,11 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, Icon, IconButton, ScreenHeader, Text } from '@/components/ui';
-import { ActivityList, AlbumBoardCard } from '@/features/album/FriendsAlbum';
+import { ActivityList } from '@/features/album/FriendsAlbum';
 import { useFriendsAlbum } from '@/features/album/useFriendsAlbum';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useFriends } from '@/features/friends/FriendsProvider';
-import { LeaderboardCard } from '@/features/leaderboard/LeaderboardCard';
+import { FriendsBoard } from '@/features/leaderboard/FriendsBoard';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { formatNumber, t } from '@/i18n';
@@ -82,12 +82,15 @@ export default function FriendsScreen() {
           />
         ) : (
           <>
-            {board.status === 'ready' ? <LeaderboardCard standings={board.standings} userId={userId} /> : null}
+            {board.status === 'ready' || album.status === 'ready' ? (
+              <FriendsBoard
+                week={board.status === 'ready' ? board.standings : null}
+                album={album.status === 'ready' ? album.board : null}
+                userId={userId}
+              />
+            ) : null}
             {album.status === 'ready' ? (
-              <>
-                <AlbumBoardCard board={album.board} userId={userId} />
-                <ActivityList items={album.activity} />
-              </>
+              <ActivityList items={album.activity} />
             ) : album.status === 'error' ? (
               <Text variant="small" color="textSecondary">
                 {t('activity.error')}

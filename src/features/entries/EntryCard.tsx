@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -5,7 +6,8 @@ import { CoffeePhoto, Icon, Text } from '@/components/ui';
 import { formatDate, t } from '@/i18n';
 import { colors, radii, sizes, spacing } from '@/theme';
 
-import { typeAndCafe } from './display';
+import { typeAndCafe, typeLabel } from './display';
+import { useSticker } from './sticker';
 import type { Entry } from './types';
 
 function openEntry(entry: Entry) {
@@ -22,25 +24,63 @@ function Rating({ value }: { value: number }) {
   );
 }
 
-// The large card: the photograph leads when there is one, or a drawing of
-// the coffee type. An entry with neither is simply its words.
+// "Today, 9:12 AM", "Yesterday, 6:40 PM", else the date.
+function when(iso: string, now = new Date()) {
+  const at = new Date(iso);
+  const days = Math.round(
+    (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
+      new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime()) /
+      86_400_000,
+  );
+  const time = formatDate(at, 'time');
+  if (days === 0) return t('home.when.today', { time });
+  if (days === 1) return t('home.when.yesterday', { time });
+  return formatDate(at, 'dayShort');
+}
+
+// The type and café under the name, without repeating a name that is only
+// the type ("Turkish Coffee / Turkish Coffee").
+function detailLine(entry: Entry) {
+  const type = typeLabel(entry);
+  if (type && type.trim().toLowerCase() === entry.name.trim().toLowerCase()) return entry.cafe;
+  return typeAndCafe(entry);
+}
+
+// What leads the card, in a square on its left: the sticker on tan, else
+// the photo, else the drawing of the drink.
+function Visual({ entry }: { entry: Entry }) {
+  const sticker = useSticker(entry.photoUrl, entry.photoPath);
+  if (sticker) {
+    return (
+      <View style={styles.cardVisual}>
+        <View style={styles.stickerBackdrop}>
+          <Image source={{ uri: sticker }} contentFit="contain" transition={250} style={styles.cardSticker} />
+        </View>
+      </View>
+    );
+  }
+  return (
+    <CoffeePhoto
+      uri={entry.photoUrl}
+      cacheKey={entry.photoPath}
+      drink={entry.type}
+      ratio="square"
+      style={styles.cardVisual}
+    />
+  );
+}
+
+// The large card, laid on its side: the coffee on the left, its name, where
+// it was had and when on the right.
 export function EntryCard({ entry }: { entry: Entry }) {
-  const subtitle = typeAndCafe(entry);
+  const detail = detailLine(entry);
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => openEntry(entry)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      {entry.photoUrl || entry.type ? (
-        <CoffeePhoto
-          uri={entry.photoUrl}
-          cacheKey={entry.photoPath}
-          drink={entry.type}
-          ratio="wide"
-          style={styles.cardPhoto}
-        />
-      ) : null}
+      {entry.photoUrl || entry.type ? <Visual entry={entry} /> : null}
       <View style={styles.cardText}>
         <View style={styles.titleRow}>
           <Text variant="heading" numberOfLines={2} style={styles.title}>
@@ -48,14 +88,14 @@ export function EntryCard({ entry }: { entry: Entry }) {
           </Text>
           {entry.isFavorite ? <Icon name="heart" size={16} filled color="textSecondary" /> : null}
         </View>
-        {subtitle ? (
-          <Text variant="small" color="textSecondary" numberOfLines={1}>
-            {subtitle}
+        {detail ? (
+          <Text variant="small" color="textSecondary" numberOfLines={2}>
+            {detail}
           </Text>
         ) : null}
         <View style={styles.meta}>
           <Text variant="caption" color="textMuted">
-            {formatDate(entry.consumedAt, 'dayShort')}
+            {when(entry.consumedAt)}
           </Text>
           {entry.rating ? <Rating value={entry.rating} /> : null}
         </View>
@@ -125,16 +165,31 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    padding: spacing.md,
     borderRadius: radii.frame,
     backgroundColor: colors.surface,
+  },
+  cardVisual: {
+    width: 116,
+    aspectRatio: 1,
+    borderRadius: radii.control,
     overflow: 'hidden',
   },
-  cardPhoto: {
-    borderRadius: 0,
+  stickerBackdrop: {
+    flex: 1,
+    padding: spacing.sm,
+    backgroundColor: colors.highlight,
+  },
+  cardSticker: {
+    flex: 1,
   },
   cardText: {
-    padding: spacing.xl - 4,
+    flex: 1,
     gap: spacing.xs,
+    paddingRight: spacing.sm,
   },
   titleRow: {
     flexDirection: 'row',

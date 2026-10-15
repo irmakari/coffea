@@ -15,7 +15,8 @@ type AvatarProps = {
 };
 
 export function Avatar({ uri, cacheKey, name, size = 72 }: AvatarProps) {
-  const initial = name?.trim().charAt(0).toUpperCase();
+  // "@ayse" starts with its letter, not the @.
+  const initial = name?.trim().replace(/^@/, '').charAt(0).toLocaleUpperCase();
 
   return (
     <View style={[styles.circle, { width: size, height: size }]}>
@@ -27,7 +28,12 @@ export function Avatar({ uri, cacheKey, name, size = 72 }: AvatarProps) {
           style={StyleSheet.absoluteFill}
         />
       ) : initial ? (
-        <Text variant="title" color="textSecondary" maxFontSizeMultiplier={1}>
+        <Text
+          variant="title"
+          color="accentPressed"
+          maxFontSizeMultiplier={1}
+          style={{ fontSize: Math.round(size * 0.42), lineHeight: Math.round(size * 0.52) }}
+        >
           {initial}
         </Text>
       ) : (
@@ -40,7 +46,8 @@ export function Avatar({ uri, cacheKey, name, size = 72 }: AvatarProps) {
 const styles = StyleSheet.create({
   circle: {
     borderRadius: radii.pill,
-    backgroundColor: colors.surface,
+    // Tan, so an initial stands out on the white cards it often sits on.
+    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
