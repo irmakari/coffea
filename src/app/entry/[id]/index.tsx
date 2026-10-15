@@ -144,6 +144,14 @@ export default function EntryScreen() {
         <Text color="textSecondary">
           {formatDate(entry.consumedAt, 'day')} · {formatDate(entry.consumedAt, 'time')}
         </Text>
+        {entry.isShared ? (
+          <View style={styles.shared}>
+            <Icon name="friends" size={16} color="textSecondary" />
+            <Text variant="small" color="textSecondary">
+              {t('entry.share.shared')}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {hasFacts ? (
@@ -258,6 +266,11 @@ const styles = StyleSheet.create({
   },
   heading: {
     marginTop: spacing.xl,
+    gap: spacing.xs,
+  },
+  shared: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
   facts: {

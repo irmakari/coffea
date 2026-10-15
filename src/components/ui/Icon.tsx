@@ -41,6 +41,27 @@ const glyphs = {
       <Path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
     </>
   ),
+  friends: (
+    <>
+      <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <Circle cx={9} cy={7} r={4} />
+      <Path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+    </>
+  ),
+  addFriend: (
+    <>
+      <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <Circle cx={9} cy={7} r={4} />
+      <Path d="M19 8v6M22 11h-6" />
+    </>
+  ),
+  more: (
+    <>
+      <Circle cx={5} cy={12} r={1} />
+      <Circle cx={12} cy={12} r={1} />
+      <Circle cx={19} cy={12} r={1} />
+    </>
+  ),
   chevronRight: <Path d="m9 18 6-6-6-6" />,
   chevronLeft: <Path d="m15 18-6-6 6-6" />,
   heart: (

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Card, Icon, Screen, ScreenHeader, SectionHeader, Text } from '@/components/ui';
+import { Card, Icon, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
 import { collect, collectBy, type Collection } from '@/features/collections/collections';
 import { CollectionTile } from '@/features/collections/CollectionTile';
@@ -31,8 +31,8 @@ export default function CollectionsScreen() {
   const toTry = items.filter((item) => !item.isCompleted).length;
 
   return (
-    <Screen scroll onRefresh={() => Promise.all([reloadEntries(), reloadBucketList()])}>
-      <ScreenHeader title={t('collections.title')} />
+    <Screen scroll edges={['top', 'bottom']} onRefresh={() => Promise.all([reloadEntries(), reloadBucketList()])}>
+      <PageHeader padded={false} title={t('collections.title')} />
 
       <View style={styles.tracking}>
         <MonthCard entries={entries} />
