@@ -4,6 +4,8 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, Icon, IconButton, ScreenHeader, Text } from '@/components/ui';
+import { ActivityList, AlbumBoardCard } from '@/features/album/FriendsAlbum';
+import { useFriendsAlbum } from '@/features/album/useFriendsAlbum';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useFriends } from '@/features/friends/FriendsProvider';
 import { LeaderboardCard } from '@/features/leaderboard/LeaderboardCard';
@@ -18,12 +20,13 @@ export default function FriendsScreen() {
   const { profile } = useProfile();
   const { friends, incoming, reload: reloadFriends } = useFriends();
   const board = useLeaderboard(0);
+  const album = useFriendsAlbum();
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([reloadFriends(), board.reload()]);
+      await Promise.all([reloadFriends(), board.reload(), album.reload()]);
     } finally {
       setRefreshing(false);
     }
@@ -77,9 +80,21 @@ export default function FriendsScreen() {
             body={t('friends.empty.body')}
             action={<Button label={t('friends.add')} onPress={() => router.push('/friends/add')} />}
           />
-        ) : board.status === 'ready' ? (
-          <LeaderboardCard standings={board.standings} userId={userId} />
-        ) : null}
+        ) : (
+          <>
+            {board.status === 'ready' ? <LeaderboardCard standings={board.standings} userId={userId} /> : null}
+            {album.status === 'ready' ? (
+              <>
+                <AlbumBoardCard board={album.board} userId={userId} />
+                <ActivityList items={album.activity} />
+              </>
+            ) : album.status === 'error' ? (
+              <Text variant="small" color="textSecondary">
+                {t('activity.error')}
+              </Text>
+            ) : null}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

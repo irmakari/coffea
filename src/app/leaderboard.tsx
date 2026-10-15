@@ -3,7 +3,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 
 import { Button, Chip, EmptyState, LoadingState, PageHeader, Screen, Text } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { metrics, rank, weekRange, type Metric, type Week } from '@/features/leaderboard/leaderboardApi';
+import { metrics, rank, weekRange, type BoardMetric, type Week } from '@/features/leaderboard/leaderboardApi';
 import { StandingRow, standingName } from '@/features/leaderboard/StandingRow';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import { useProfile } from '@/features/profile/ProfileProvider';
@@ -20,7 +20,7 @@ export default function LeaderboardScreen() {
   const userId = session?.user.id;
   const { profile, setOnLeaderboard } = useProfile();
   const [week, setWeek] = useState<Week>(0);
-  const [metric, setMetric] = useState<Metric>('cups');
+  const [metric, setMetric] = useState<BoardMetric>('cups');
   const [failure, setFailure] = useState<string | null>(null);
   const board = useLeaderboard(week);
 

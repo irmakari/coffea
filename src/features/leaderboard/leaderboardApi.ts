@@ -3,7 +3,10 @@ import type { Person } from '@/features/friends/friendsApi';
 import { supabase } from '@/lib/supabase';
 
 export const metrics = ['cups', 'days', 'cafes'] as const;
-export type Metric = (typeof metrics)[number];
+// The album's count is not weekly, so it has a card of its own and is not
+// one of the board's tabs.
+export type BoardMetric = (typeof metrics)[number];
+export type Metric = BoardMetric | 'album';
 
 // This week, or the one before it.
 export type Week = 0 | -1;
@@ -61,7 +64,7 @@ export async function fetchLeaderboard(week: Week): Promise<Standing[]> {
 
 // Highest first. Equal totals share a place, and the next place skips
 // accordingly: 1, 2, 2, 4.
-export function rank(standings: Standing[], metric: Metric, nameOf: (standing: Standing) => string): Ranked[] {
+export function rank(standings: Standing[], metric: BoardMetric, nameOf: (standing: Standing) => string): Ranked[] {
   const sorted = [...standings].sort(
     (a, b) => b[metric] - a[metric] || nameOf(a).localeCompare(nameOf(b)),
   );

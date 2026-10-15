@@ -95,6 +95,25 @@ export const en = {
       empty: 'Try a new coffee to start your album.',
     },
   },
+  activity: {
+    albumEyebrow: 'Album',
+    albumTitle: {
+      nobody: 'Nobody has started their album yet',
+      youLead: 'You lead with {{value}}',
+      leads: '{{name}} leads with {{value}}',
+    },
+    albumBody: 'Who has tried the most kinds of coffee, ever.',
+    title: 'Lately',
+    collected: '{{name}} collected {{coffee}}',
+    progress: '#{{count}} in their album',
+    empty: 'When a friend tries a coffee for the first time, it shows up here.',
+    error: 'Friends activity did not load. Pull down to try again.',
+    when: {
+      today: 'Today',
+      yesterday: 'Yesterday',
+      days: '{{count}} days ago',
+    },
+  },
   collections: {
     title: 'Collections',
     favorites: 'Favorites',
@@ -473,6 +492,10 @@ export const en = {
       cafes: {
         one: '1 café',
         other: '{{count}} cafés',
+      },
+      album: {
+        one: '1 coffee',
+        other: '{{count}} coffees',
       },
     },
     card: {
