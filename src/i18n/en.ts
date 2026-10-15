@@ -347,6 +347,7 @@ export const en = {
     shelf: {
       week: 'This week',
       month: 'This month',
+      someOf: '{{shown}} of {{total}} coffees',
       back: 'Scroll back',
       forward: 'Scroll forward',
     },
