@@ -125,7 +125,6 @@ export function MonthCalendar({
                 >
                   {hasCoffee ? (
                     <DayFace
-                      day={day}
                       photo={photo}
                       drink={entries.find((entry) => entry.type)?.type}
                       cupSize={cupSize}
@@ -160,16 +159,13 @@ export function MonthCalendar({
   );
 }
 
-// A day with a coffee. A sticker stands on the day by itself, the way a
-// sticker album fills a page; a photo with no sticker, or a drawing for a
-// coffee with no photo, keeps the day's number in a corner.
+// A day with a coffee: the sticker, else the photo, else a drawing. None of
+// them carries the day's number, so the month reads as one album page.
 function DayFace({
-  day,
   photo,
   drink,
   cupSize,
 }: {
-  day: number;
   photo: Entry | undefined;
   drink: string | null | undefined;
   cupSize: number;
@@ -187,32 +183,19 @@ function DayFace({
     );
   }
 
-  return (
-    <>
-      {photo ? (
-        <Image
-          source={
-            photo.photoPath
-              ? { uri: photo.photoUrl ?? undefined, cacheKey: photo.photoPath }
-              : { uri: photo.photoUrl ?? undefined }
-          }
-          contentFit="cover"
-          transition={150}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : (
-        <CupMark drink={drink} size={cupSize} />
-      )}
-      <View style={styles.number}>
-        <Text
-          variant="caption"
-          maxFontSizeMultiplier={1}
-          style={styles.numberText}
-        >
-          {day}
-        </Text>
-      </View>
-    </>
+  return photo ? (
+    <Image
+      source={
+        photo.photoPath
+          ? { uri: photo.photoUrl ?? undefined, cacheKey: photo.photoPath }
+          : { uri: photo.photoUrl ?? undefined }
+      }
+      contentFit="cover"
+      transition={150}
+      style={StyleSheet.absoluteFill}
+    />
+  ) : (
+    <CupMark drink={drink} size={cupSize} />
   );
 }
 
@@ -265,23 +248,7 @@ const styles = StyleSheet.create({
   dayNumber: {
     fontSize: 14,
   },
-  number: {
-    position: "absolute",
-    left: 2,
-    top: 2,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: {
-    fontSize: 10,
-    lineHeight: 13,
-  },
-  // Opposite the day's number, so the two never meet in a narrow day.
+  // How many coffees the day had, in a corner of its picture.
   count: {
     position: "absolute",
     right: 2,
