@@ -426,32 +426,9 @@ export const en = {
     title: 'Friends',
     manage: 'Your friends',
     you: 'You',
-    more: 'More for {{name}}',
     requests: {
       one: '1 friend request',
       other: '{{count}} friend requests',
-    },
-    when: {
-      now: 'Just now',
-      minutes: '{{count}} min ago',
-      hours: '{{count}} h ago',
-      yesterday: 'Yesterday',
-    },
-    cheers: {
-      action: 'Cheers',
-      give: 'Cheers {{name}}',
-      undo: 'Take back your cheers for {{name}}',
-      none: 'No cheers yet',
-      one: '☕ 1 cheers',
-      other: '☕ {{count}} cheers',
-    },
-    empty: {
-      title: 'Nothing poured yet',
-      body: 'When you or your friends share a coffee, it shows up here.',
-    },
-    loadError: {
-      title: 'The feed did not load',
-      body: 'Check your connection and try again.',
     },
   },
   leaderboard: {
@@ -498,7 +475,7 @@ export const en = {
       body: 'Check your connection and try again.',
     },
     rules:
-      'Weeks run Monday to Sunday. Up to 5 cups a day count, and a coffee logged more than two days late does not. Every coffee counts, shared or not, but friends only see the totals.',
+      'Weeks run Monday to Sunday. Up to 5 cups a day count, and a coffee logged more than two days late does not. Every coffee counts, and friends only see the totals.',
     visibility: {
       label: 'Show me on the leaderboard',
       on: 'Your friends see your weekly totals.',
@@ -507,9 +484,7 @@ export const en = {
     },
   },
   report: {
-    coffee: 'Report this coffee',
     person: 'Report',
-    titleCoffee: 'What is wrong with this coffee?',
     titlePerson: 'Why are you reporting them?',
     reasons: {
       inappropriate: 'Inappropriate photo or text',
@@ -686,13 +661,6 @@ export const en = {
     notes: {
       label: 'Notes',
       placeholder: 'Anything worth remembering',
-    },
-    share: {
-      label: 'Share with friends',
-      hint: 'Friends see it in their feed. Price and notes stay private.',
-      noFriends: 'Add a friend and your coffees can show up in their feed.',
-      addFriends: 'Add friends',
-      shared: 'Shared with friends',
     },
     save: 'Save coffee',
     saveChanges: 'Save changes',

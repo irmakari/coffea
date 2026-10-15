@@ -1,14 +1,20 @@
 import { Alert } from 'react-native';
 
-import { reportContent, type ReportReason } from '@/features/feed/feedApi';
 import { t } from '@/i18n';
+import { supabase } from '@/lib/supabase';
 
 import { showActions } from './actions';
 
+type ReportReason = 'inappropriate' | 'spam' | 'other';
+
+// Files a report about a person, read by hand in the dashboard.
+async function reportPerson(userId: string, reason: ReportReason): Promise<void> {
+  const { error } = await supabase.rpc('report_content', { target_user: userId, entry: null, reason });
+  if (error) throw error;
+}
+
 type ReportOptions = {
   person: { id: string; name: string };
-  // Reports this one coffee rather than the person.
-  entryId?: string;
   // Offered once the report is in, for someone the user would rather not see.
   onBlock: () => void;
   onError: () => void;
@@ -22,14 +28,14 @@ const reasons: { reason: ReportReason; label: () => string }[] = [
 
 // Asks why, files the report, then offers to block. Reports are read by a
 // person and acted on; nothing happens to the reported account on its own.
-export function askToReport({ person, entryId, onBlock, onError }: ReportOptions) {
+export function askToReport({ person, onBlock, onError }: ReportOptions) {
   showActions(
-    t(entryId ? 'report.titleCoffee' : 'report.titlePerson'),
+    t('report.titlePerson'),
     reasons.map(({ reason, label }) => ({
       label: label(),
       onPress: async () => {
         try {
-          await reportContent(person.id, reason, entryId);
+          await reportPerson(person.id, reason);
         } catch {
           onError();
           return;

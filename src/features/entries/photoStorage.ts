@@ -1,5 +1,3 @@
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-
 import { supabase } from '@/lib/supabase';
 
 const BUCKET = 'coffee-photos';
@@ -21,46 +19,15 @@ export async function uploadPhoto(userId: string, localUri: string): Promise<str
   return path;
 }
 
-// A coffee's photo as stored: the picture itself and, when one could be
-// made, a smaller copy for the friends feed.
+// A coffee's photo as stored. Older coffees may also have a smaller copy
+// made for the friends feed, which goes when the photo does.
 export type StoredPhoto = {
   path: string;
   thumbPath: string | null;
 };
 
-// The width of the feed's copy: sharp across a phone, a fraction of the
-// download.
-const THUMB_WIDTH = 800;
-
-// Resolves to null for a photo already this small, which the feed can show
-// as it is.
-async function uploadThumbnail(userId: string, localUri: string): Promise<string | null> {
-  const original = await ImageManipulator.manipulate(localUri).renderAsync();
-  const small = original.width <= THUMB_WIDTH;
-  original.release();
-  if (small) return null;
-
-  const context = ImageManipulator.manipulate(localUri).resize({ width: THUMB_WIDTH, height: null });
-  const rendered = await context.renderAsync();
-  try {
-    const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.7 });
-    return await uploadPhoto(userId, saved.uri);
-  } finally {
-    rendered.release();
-    context.release();
-  }
-}
-
-// Uploads a coffee's photo with its feed copy. The copy is a nicety: if it
-// fails the photo is still stored, and the feed shows the full picture.
 async function uploadCoffeePhoto(userId: string, localUri: string): Promise<StoredPhoto> {
-  const [full, thumb] = await Promise.allSettled([uploadPhoto(userId, localUri), uploadThumbnail(userId, localUri)]);
-  const thumbPath = thumb.status === 'fulfilled' ? thumb.value : null;
-  if (full.status === 'rejected') {
-    if (thumbPath) await removePhoto(thumbPath);
-    throw full.reason;
-  }
-  return { path: full.value, thumbPath };
+  return { path: await uploadPhoto(userId, localUri), thumbPath: null };
 }
 
 // Uploads begun the moment a photo was picked, by the file they came from.

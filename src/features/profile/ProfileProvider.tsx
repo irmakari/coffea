@@ -16,8 +16,6 @@ type Profile = {
   displayName: string | null;
   // How friends find this account. Missing until the user picks one.
   username: string | null;
-  // Whether the log form starts with sharing on: the last choice made there.
-  shareByDefault: boolean;
   // Whether friends see this account on their weekly leaderboard.
   onLeaderboard: boolean;
   preferredCurrency: string;
@@ -32,7 +30,6 @@ type ProfileState = {
   setDisplayName: (name: string) => Promise<void>;
   // Takes the username as stored; see `normalizeUsername`.
   setUsername: (username: string) => Promise<void>;
-  setShareByDefault: (value: boolean) => Promise<void>;
   setOnLeaderboard: (value: boolean) => Promise<void>;
   // Takes a photo file on the device.
   setAvatar: (localUri: string) => Promise<void>;
@@ -42,7 +39,6 @@ type ProfileState = {
 type ProfileRow = {
   display_name: string | null;
   username: string | null;
-  share_by_default: boolean;
   on_leaderboard: boolean;
   preferred_currency: string;
   avatar_path: string | null;
@@ -51,7 +47,6 @@ type ProfileRow = {
 const fallback: Profile = {
   displayName: null,
   username: null,
-  shareByDefault: true,
   onLeaderboard: true,
   preferredCurrency: DEFAULT_CURRENCY,
   avatarPath: null,
@@ -75,7 +70,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('display_name, username, share_by_default, on_leaderboard, preferred_currency, avatar_path')
+    .select('display_name, username, on_leaderboard, preferred_currency, avatar_path')
     .eq('id', userId)
     .maybeSingle<ProfileRow>();
   if (!data) return null;
@@ -84,7 +79,6 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   return {
     displayName: data.display_name,
     username: data.username,
-    shareByDefault: data.share_by_default,
     onLeaderboard: data.on_leaderboard,
     preferredCurrency: data.preferred_currency,
     avatarPath: data.avatar_path,
@@ -156,10 +150,6 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
           apply(previous);
           throw error;
         }
-      },
-      setShareByDefault: async (shareByDefault) => {
-        setProfile((current) => ({ ...current, shareByDefault }));
-        await save({ share_by_default: shareByDefault });
       },
       setAvatar: async (localUri) => {
         if (!userId) throw new Error('Not signed in');
