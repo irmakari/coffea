@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
@@ -7,6 +8,7 @@ import { colors, photoRatio, radii, sizes, spacing } from '@/theme';
 
 import { askPhotoSource } from './askPhotoSource';
 import { CameraDeniedError, pickPhoto, type PhotoSource } from './pickPhoto';
+import { useSticker } from './sticker';
 
 type PhotoFieldProps = {
   uri: string | null;
@@ -19,6 +21,9 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
   const [failure, setFailure] = useState<TranslationKey | null>(null);
   // From opening the picker until the chosen photo is ready to show.
   const [busy, setBusy] = useState(false);
+  // The photo as the calendar will show it, once its sticker is made. Until
+  // then, and wherever none can be made, the photo itself.
+  const sticker = useSticker(uri, null);
 
   const pick = async (source: PhotoSource) => {
     setFailure(null);
@@ -53,7 +58,13 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
             onPress={choose}
             style={busy && styles.busy}
           >
-            <CoffeePhoto uri={uri} ratio="landscape" />
+            {sticker ? (
+              <View style={styles.stickerBackdrop}>
+                <Image source={{ uri: sticker }} contentFit="contain" transition={200} style={styles.sticker} />
+              </View>
+            ) : (
+              <CoffeePhoto uri={uri} ratio="landscape" />
+            )}
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -125,6 +136,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     borderRadius: radii.pill,
     backgroundColor: colors.surface,
+  },
+  stickerBackdrop: {
+    aspectRatio: photoRatio.landscape,
+    borderRadius: radii.frame,
+    backgroundColor: colors.highlight,
+    padding: spacing.lg,
+  },
+  sticker: {
+    flex: 1,
   },
   busy: {
     opacity: 0.6,
