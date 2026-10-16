@@ -63,6 +63,12 @@
         "projectId": "579f56e6-a2b5-476f-b5f3-e64e81207ef3"
       }
     },
-    "owner": "irmakari"
+    "owner": "irmakari",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/579f56e6-a2b5-476f-b5f3-e64e81207ef3"
+    }
   }
 }
