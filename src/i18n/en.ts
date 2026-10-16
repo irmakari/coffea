@@ -52,10 +52,8 @@ export const en = {
     },
     today: {
       title: 'Today',
-      more: '+{{count}} more today',
       invite: 'Time for a {{coffee}}?',
       inviteAny: 'Nothing logged yet today',
-      logFavorite: 'Log a {{coffee}}',
     },
     seeAll: 'See All',
     when: {
@@ -559,15 +557,19 @@ export const en = {
       title: 'Not your friend anymore',
       body: 'Their page shows only while you are friends.',
     },
-    stats: {
-      week: 'Cups this week',
-      album: 'Album',
-      albumValue: '{{count}}/{{total}}',
-      rank: 'Album place',
+    week: {
+      title: 'This week',
+      cup: 'cup',
+      cups: 'cups',
     },
+    album: {
+      title: 'Album',
+      of: 'of {{total}}',
+      rank: '#{{rank}} among friends',
+    },
+    hidden: 'They keep their totals and their album to themselves.',
     firsts: 'New to them lately',
     noFirsts: 'Nothing new to them in the last 30 days.',
-    noOtherFirsts: 'Nothing else new to them in the last 30 days.',
     privacy: 'Friends see totals and the coffees they try for the first time, never notes, photos or cafés.',
   },
   leaderboard: {
@@ -633,8 +635,8 @@ export const en = {
       'Weeks run Monday to Sunday. Up to 5 cups a day count, and a coffee logged more than two days late does not. Every coffee counts, and friends only see the totals.',
     visibility: {
       label: 'Show me on the leaderboard',
-      on: 'Your friends see your weekly totals.',
-      off: 'Friends do not see you on their leaderboard.',
+      on: 'Your friends see your weekly totals, your album and the new coffees you try.',
+      off: 'Friends do not see you on their leaderboard, in the album or under Lately.',
       error: 'That did not save. Please try again.',
     },
   },

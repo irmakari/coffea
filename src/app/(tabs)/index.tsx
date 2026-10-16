@@ -26,7 +26,7 @@ import {
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
-import { TodayCard } from "@/features/home/TodayCard";
+import { TodayInvite } from "@/features/home/TodayInvite";
 import { StreakCard } from "@/features/stats/StreakCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
 import { useHeroStatusBar } from "@/features/theme/theme";
@@ -229,7 +229,21 @@ export default function HomeScreen() {
                   onPress: () => router.navigate("/diary"),
                 }}
               />
-              <TodayCard today={today} />
+              {/* A plain list, like Earlier below it, with each coffee's time. */}
+              {today.length > 0 ? (
+                <View>
+                  {today.map((entry, index) => (
+                    <EntryRow
+                      key={entry.id}
+                      entry={entry}
+                      time
+                      last={index === today.length - 1}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <TodayInvite />
+              )}
             </View>
 
             <StreakCard entries={entries} />
@@ -289,6 +303,10 @@ export default function HomeScreen() {
   );
 }
 
+// Home sits a little wider than other pages, so its cards and photos get
+// more of the screen.
+const GUTTER = spacing.lg;
+
 const styles = themed(() => ({
   root: {
     flex: 1,
@@ -319,7 +337,7 @@ const styles = themed(() => ({
     backgroundColor: colors.background,
   },
   hero: {
-    paddingHorizontal: spacing.screen,
+    paddingHorizontal: GUTTER,
     paddingBottom: spacing.xl,
     backgroundColor: colors.hero,
     borderBottomLeftRadius: radii.frame + 6,
@@ -350,7 +368,7 @@ const styles = themed(() => ({
   },
   body: {
     flexGrow: 1,
-    paddingHorizontal: spacing.screen,
+    paddingHorizontal: GUTTER,
     paddingTop: spacing.xl + 4,
     // Opaque down to the end of the page, to keep the tan behind it hidden.
     paddingBottom: spacing.xxxl,
@@ -361,10 +379,10 @@ const styles = themed(() => ({
     gap: spacing.sm,
   },
   shelf: {
-    marginHorizontal: -spacing.screen,
+    marginHorizontal: -GUTTER,
   },
   shelfContent: {
-    paddingHorizontal: spacing.screen,
+    paddingHorizontal: GUTTER,
     gap: spacing.md,
   },
   pressed: {

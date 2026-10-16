@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { CoffeePhoto, Icon, Text } from '@/components/ui';
+import { CoffeePhoto, CupMark, Icon, Text } from '@/components/ui';
 import { formatDate, t } from '@/i18n';
 import { colors, radii, sizes, spacing, themed, withAlpha } from '@/theme';
 
@@ -12,6 +12,9 @@ import type { Entry } from './types';
 
 // Wide enough that a shelf of them shows two and the edge of a third.
 export const TILE_WIDTH = 150;
+
+// The side of a row's picture.
+const THUMBNAIL = 52;
 
 function openEntry(entry: Entry) {
   router.push({ pathname: '/entry/[id]', params: { id: entry.id } });
@@ -130,9 +133,33 @@ export function EntryTile({ entry }: { entry: Entry }) {
   );
 }
 
+// The row's picture: the photo, or without one the drawing of the drink
+// straight on the page, as the calendar draws it, not on a tile of its own.
+function Thumbnail({ entry }: { entry: Entry }) {
+  if (!entry.photoUrl && entry.type) {
+    return (
+      <View style={styles.thumbnailBare}>
+        <CupMark drink={entry.type} size={THUMBNAIL} />
+      </View>
+    );
+  }
+  return <CoffeePhoto uri={entry.photoUrl} cacheKey={entry.photoPath} drink={entry.type} ratio="square" style={styles.thumbnail} />;
+}
+
 // A compact line for lists inside a card, with a small thumbnail. `rating`
-// adds the stars under the date, for lists ordered by them.
-export function EntryRow({ entry, last = false, rating = false }: { entry: Entry; last?: boolean; rating?: boolean }) {
+// adds the stars under the date, for lists ordered by them; `time` shows the
+// time instead of the day, for a list of one day's coffees.
+export function EntryRow({
+  entry,
+  last = false,
+  rating = false,
+  time = false,
+}: {
+  entry: Entry;
+  last?: boolean;
+  rating?: boolean;
+  time?: boolean;
+}) {
   const subtitle = typeAndCafe(entry);
   return (
     <Pressable
@@ -140,7 +167,7 @@ export function EntryRow({ entry, last = false, rating = false }: { entry: Entry
       onPress={() => openEntry(entry)}
       style={({ pressed }) => [styles.row, last && styles.rowLast, pressed && styles.pressed]}
     >
-      <CoffeePhoto uri={entry.photoUrl} cacheKey={entry.photoPath} drink={entry.type} ratio="square" style={styles.thumbnail} />
+      <Thumbnail entry={entry} />
       <View style={styles.rowText}>
         <Text variant="bodyStrong" numberOfLines={1}>
           {entry.name}
@@ -153,7 +180,7 @@ export function EntryRow({ entry, last = false, rating = false }: { entry: Entry
       </View>
       <View style={styles.rowEnd}>
         <Text variant="caption" color="textMuted">
-          {formatDate(entry.consumedAt, 'dayShort')}
+          {formatDate(entry.consumedAt, time ? 'time' : 'dayShort')}
         </Text>
         {rating && entry.rating ? <Rating value={entry.rating} /> : null}
       </View>
@@ -257,9 +284,15 @@ const styles = themed(() => ({
     borderBottomWidth: 0,
   },
   thumbnail: {
-    width: 52,
+    width: THUMBNAIL,
     borderRadius: 14,
     backgroundColor: colors.background,
+  },
+  thumbnailBare: {
+    width: THUMBNAIL,
+    height: THUMBNAIL,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowText: {
     flex: 1,

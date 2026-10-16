@@ -1,60 +1,76 @@
 import { useRef, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
-import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 
 import { Button, Card, CupMark, PageHeader, Screen, Text } from '@/components/ui';
 import { startLog } from '@/features/entries/logDraft';
 import { coffeeTypes, type CoffeeType } from '@/features/entries/types';
 import { t } from '@/i18n';
 import { successFeedback, tapFeedback } from '@/lib/haptics';
-import { colors, fonts, spacing, themed } from '@/theme';
+import { colors, fonts, radii, spacing, themed, withAlpha } from '@/theme';
 
-const WHEEL_SIZE = 300;
+const WHEEL_SIZE = 312;
 const RADIUS = WHEEL_SIZE / 2;
+// The dark ring round the slices, and the slices inside it.
+const RIM = 12;
+const FACE = RADIUS - RIM;
+const HUB = 56;
+const NAME_SIZE = 12;
 const drinks = coffeeTypes.filter((type): type is Exclude<CoffeeType, 'other'> => type !== 'other');
 const SLICE = 360 / drinks.length;
-const sliceColors = () => [colors.highlight, colors.surface, colors.borderStrong, colors.background];
+// Three warm tones, so no two neighbours match, even where the last slice
+// meets the first. The third is tan let through onto the dark rim drawn
+// under the slices, which gives a deep roast brown.
+const sliceColors = () => [colors.highlight, colors.surface, withAlpha(colors.highlight, 0.45)];
+// That third slice is dark, so its name is light.
+const DARK_SLICE = 2;
 
-// A point on the rim, `angle` degrees clockwise from the top.
-function rim(angle: number, radius = RADIUS) {
+// A point `radius` out from the middle, `angle` degrees clockwise from the top.
+function at(angle: number, radius: number) {
   const radians = ((angle - 90) * Math.PI) / 180;
   return { x: RADIUS + radius * Math.cos(radians), y: RADIUS + radius * Math.sin(radians) };
 }
 
 function slicePath(index: number) {
-  const start = rim(index * SLICE);
-  const end = rim((index + 1) * SLICE);
-  return `M${RADIUS} ${RADIUS} L${start.x} ${start.y} A${RADIUS} ${RADIUS} 0 0 1 ${end.x} ${end.y} Z`;
+  const start = at(index * SLICE, FACE);
+  const end = at((index + 1) * SLICE, FACE);
+  return `M${RADIUS} ${RADIUS} L${start.x} ${start.y} A${FACE} ${FACE} 0 0 1 ${end.x} ${end.y} Z`;
 }
 
+// The turning part: slices on a dark rim with a bead where each slice
+// meets the next, and each coffee's name running along the middle of its
+// slice, ending at the rim so it stays clear of the hub.
 function Wheel() {
+  const fills = sliceColors();
   return (
-    <Svg width={WHEEL_SIZE} height={WHEEL_SIZE}>
-      {drinks.map((drink, index) => {
-        const middle = (index + 0.5) * SLICE;
-        return (
-          <G key={drink}>
-            <Path
-              d={slicePath(index)}
-              fill={sliceColors()[index % 4]}
-              stroke={colors.border}
-              strokeWidth={1}
-            />
-            {/* Each name runs out from the hub along the middle of its slice. */}
-            <SvgText
-              x={RADIUS + 24}
-              y={RADIUS + 4}
-              fontSize={11}
-              fontFamily={fonts.sansBold}
-              fill={colors.text}
-              transform={`rotate(${middle - 90} ${RADIUS} ${RADIUS})`}
-            >
-              {t(`coffeeTypes.${drink}`)}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
+    <View style={styles.face}>
+      <Svg width={WHEEL_SIZE} height={WHEEL_SIZE}>
+        <Circle cx={RADIUS} cy={RADIUS} r={RADIUS} fill={colors.accent} />
+        {drinks.map((drink, index) => (
+          <Path key={drink} d={slicePath(index)} fill={fills[index % fills.length]} />
+        ))}
+        {drinks.map((drink, index) => {
+          const bead = at(index * SLICE, RADIUS - RIM / 2);
+          return <Circle key={`bead-${drink}`} cx={bead.x} cy={bead.y} r={2.5} fill={colors.surface} />;
+        })}
+        {drinks.map((drink, index) => (
+          <SvgText
+            key={`name-${drink}`}
+            x={RADIUS + FACE - 14}
+            // Nudged down by a third of the size, so the line sits on the
+            // slice's middle rather than on its edge.
+            y={RADIUS + NAME_SIZE / 3}
+            textAnchor="end"
+            fontSize={NAME_SIZE}
+            fontFamily={fonts.sansStrong}
+            fill={index % 3 === DARK_SLICE ? colors.surface : colors.text}
+            transform={`rotate(${(index + 0.5) * SLICE - 90} ${RADIUS} ${RADIUS})`}
+          >
+            {t(`coffeeTypes.${drink}`)}
+          </SvgText>
+        ))}
+      </Svg>
+    </View>
   );
 }
 
@@ -97,16 +113,25 @@ export default function WheelScreen() {
       <PageHeader padded={false} title={t('wheel.title')} subtitle={t('wheel.body')} />
 
       <View style={styles.stage}>
-        <View style={styles.pointer} />
-        <Animated.View style={[styles.wheel, { transform: [{ rotate }] }]}>
-          <Wheel />
-        </Animated.View>
+        <View style={styles.wheel}>
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Wheel />
+          </Animated.View>
+          {/* Stays still while the wheel turns under it. */}
+          <View style={styles.hub}>
+            <View style={styles.hubDot} />
+          </View>
+        </View>
+        <View style={styles.pointer}>
+          <View style={styles.pointerHead} />
+          <View style={styles.pointerTip} />
+        </View>
       </View>
 
       <Button label={t(picked ? 'wheel.again' : 'wheel.spin')} loading={spinning} onPress={spin} />
 
       {picked ? (
-        <Card style={styles.result}>
+        <Card outline style={styles.result}>
           <CupMark drink={picked} size={72} />
           <View style={styles.resultText}>
             <Text variant="small" color="textSecondary">
@@ -126,23 +151,61 @@ const styles = themed(() => ({
     alignItems: 'center',
     marginVertical: spacing.xl,
   },
+  // Lifted off the page a little, like the friends board.
   wheel: {
     width: WHEEL_SIZE,
     height: WHEEL_SIZE,
     borderRadius: RADIUS,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: colors.accent,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  // A small downward triangle over the top of the wheel.
+  face: {
+    width: WHEEL_SIZE,
+    height: WHEEL_SIZE,
+  },
+  hub: {
+    position: 'absolute',
+    left: RADIUS - HUB / 2,
+    top: RADIUS - HUB / 2,
+    width: HUB,
+    height: HUB,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent,
+    borderWidth: 4,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hubDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+  },
+  // A pin over the top of the wheel: a round head with a point below it.
   pointer: {
-    zIndex: 1,
-    marginBottom: -10,
+    position: 'absolute',
+    top: -14,
+    alignItems: 'center',
+  },
+  pointerHead: {
+    width: 26,
+    height: 26,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: colors.surface,
+  },
+  pointerTip: {
+    marginTop: -4,
     width: 0,
     height: 0,
-    borderLeftWidth: 12,
-    borderRightWidth: 12,
-    borderTopWidth: 20,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 14,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: colors.accent,

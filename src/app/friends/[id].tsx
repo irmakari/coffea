@@ -5,7 +5,6 @@ import { View } from 'react-native';
 import {
   Avatar,
   Button,
-  CupMark,
   EmptyState,
   IconButton,
   LoadingState,
@@ -15,28 +14,18 @@ import {
   Text,
 } from '@/components/ui';
 import { albumSlots } from '@/features/album/album';
-import { activityWhen, coffeeName } from '@/features/album/FriendsAlbum';
+import { ActivityRow } from '@/features/album/FriendsAlbum';
 import { openFriendMenu } from '@/features/friends/friendMenu';
 import { personName } from '@/features/friends/friendsApi';
 import { useFriends } from '@/features/friends/FriendsProvider';
 import { useFriendPage } from '@/features/friends/useFriendPage';
+import { valueLabel } from '@/features/leaderboard/StandingRow';
 import { formatNumber, t } from '@/i18n';
-import { colors, radii, sizes, spacing, themed } from '@/theme';
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text variant="heading">{value}</Text>
-      <Text variant="caption" color="textSecondary" numberOfLines={1}>
-        {label}
-      </Text>
-    </View>
-  );
-}
+import { colors, radii, spacing, themed } from '@/theme';
 
 // A friend's page, opened from their row or from one of their firsts: who
-// they are, their totals, and the coffees they tried for the first time
-// lately, the tapped one on top.
+// they are, their week, their album, and the coffees they tried for the
+// first time lately, the tapped one first.
 export default function FriendScreen() {
   const { id, coffee } = useLocalSearchParams<{ id: string; coffee?: string }>();
   const { friends, remove, block } = useFriends();
@@ -56,7 +45,10 @@ export default function FriendScreen() {
   const name = personName(person);
   const handle = person.displayName && person.username ? `@${person.username}` : null;
   const focus = coffee ? page.firsts.find((item) => item.coffee === coffee) : undefined;
-  const rest = page.firsts.filter((item) => item !== focus);
+  const firsts = focus ? [focus, ...page.firsts.filter((item) => item !== focus)] : page.firsts;
+  const total = albumSlots().length;
+  // Someone off the leaderboard shares no totals, here or anywhere.
+  const hidden = !page.week && !page.album;
 
   const openMenu = () =>
     openFriendMenu(person, {
@@ -83,13 +75,18 @@ export default function FriendScreen() {
         trailing={<IconButton icon="more" plain label={t('friends.more', { name })} onPress={openMenu} />}
       />
 
-      <View style={styles.hero}>
-        <Avatar uri={person.avatarUrl} cacheKey={person.avatarPath} name={name} size={88} />
-        <View style={styles.heroText}>
-          <Text variant="title" numberOfLines={1}>
+      {/* Laid out as the user's own profile is, so the two read as one kind of page. */}
+      <View style={styles.identity}>
+        <Avatar uri={person.avatarUrl} cacheKey={person.avatarPath} name={name} size={84} />
+        <View style={styles.identityText}>
+          <Text variant="title" accessibilityRole="header" numberOfLines={2}>
             {name}
           </Text>
-          {handle ? <Text color="textSecondary">{handle}</Text> : null}
+          {handle ? (
+            <Text variant="small" color="textSecondary" numberOfLines={1}>
+              {handle}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -107,68 +104,72 @@ export default function FriendScreen() {
           body={t('common.loadError.body')}
           action={<Button variant="secondary" label={t('common.retry')} onPress={page.reload} />}
         />
+      ) : hidden ? (
+        <View style={styles.card}>
+          <Text color="textSecondary">{t('friendPage.hidden')}</Text>
+        </View>
       ) : (
         <>
-          {focus ? (
-            <View style={styles.focus}>
-              <CupMark drink={focus.coffee} size={72} />
-              <View style={styles.focusText}>
-                <Text variant="subheading">
-                  {t('activity.collected', { name, coffee: coffeeName(focus.coffee) })}
-                </Text>
+          <View style={styles.cards}>
+            <View style={styles.card}>
+              <Text variant="eyebrow" color="textSecondary">
+                {t('friendPage.week.title')}
+              </Text>
+              <View style={styles.figure}>
+                <Text variant="display">{formatNumber(page.week?.cups ?? 0)}</Text>
                 <Text variant="small" color="textSecondary">
-                  {activityWhen(focus.collectedAt)} · {t('activity.progress', { count: focus.collected })}
+                  {t(page.week?.cups === 1 ? 'friendPage.week.cup' : 'friendPage.week.cups')}
                 </Text>
               </View>
+              <Text variant="caption" color="textMuted" numberOfLines={2}>
+                {valueLabel('days', page.week?.days ?? 0)} · {valueLabel('cafes', page.week?.cafes ?? 0)}
+              </Text>
             </View>
-          ) : null}
 
-          <View style={styles.stats}>
-            <Stat
-              value={page.week ? formatNumber(page.week.cups) : '–'}
-              label={t('friendPage.stats.week')}
-            />
-            <View style={styles.statRule} />
-            <Stat
-              value={t('friendPage.stats.albumValue', {
-                count: formatNumber(page.album?.value ?? 0),
-                total: formatNumber(albumSlots().length),
-              })}
-              label={t('friendPage.stats.album')}
-            />
-            <View style={styles.statRule} />
-            <Stat
-              value={page.album ? `#${formatNumber(page.album.rank)}` : '–'}
-              label={t('friendPage.stats.rank')}
-            />
+            <View style={styles.card}>
+              <Text variant="eyebrow" color="textSecondary">
+                {t('friendPage.album.title')}
+              </Text>
+              <View style={styles.figure}>
+                <Text variant="display">{formatNumber(page.album?.value ?? 0)}</Text>
+                <Text variant="small" color="textSecondary">
+                  {t('friendPage.album.of', { total: formatNumber(total) })}
+                </Text>
+              </View>
+              <View style={styles.track}>
+                <View
+                  style={[
+                    styles.fill,
+                    { width: `${Math.min(((page.album?.value ?? 0) / Math.max(total, 1)) * 100, 100)}%` },
+                  ]}
+                />
+              </View>
+              {page.album ? (
+                <Text variant="caption" color="textMuted" numberOfLines={1}>
+                  {t('friendPage.album.rank', { rank: formatNumber(page.album.rank) })}
+                </Text>
+              ) : null}
+            </View>
           </View>
 
-          <View>
+          <View style={styles.section}>
             <SectionHeader title={t('friendPage.firsts')} />
-            {rest.length === 0 ? (
-              <Text color="textSecondary">{t(focus ? 'friendPage.noOtherFirsts' : 'friendPage.noFirsts')}</Text>
+            {firsts.length === 0 ? (
+              <Text color="textSecondary">{t('friendPage.noFirsts')}</Text>
             ) : (
-              rest.map((item, index) => (
-                <View key={item.coffee} style={[styles.row, index === rest.length - 1 && styles.rowLast]}>
-                  <CupMark drink={item.coffee} size={40} />
-                  <View style={styles.rowText}>
-                    <Text variant="bodyStrong" numberOfLines={1}>
-                      {coffeeName(item.coffee)}
-                    </Text>
-                    <Text variant="caption" color="textMuted">
-                      {activityWhen(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
-                    </Text>
-                  </View>
-                </View>
-              ))
+              <View>
+                {firsts.map((item, index) => (
+                  <ActivityRow key={item.coffee} item={item} last={index === firsts.length - 1} />
+                ))}
+              </View>
             )}
           </View>
-
-          <Text variant="small" color="textMuted">
-            {t('friendPage.privacy')}
-          </Text>
         </>
       )}
+
+      <Text variant="small" color="textMuted" style={styles.privacy}>
+        {t('friendPage.privacy')}
+      </Text>
     </Screen>
   );
 }
@@ -178,62 +179,52 @@ const styles = themed(() => ({
     gap: spacing.xl,
     paddingTop: spacing.lg,
   },
-  hero: {
+  identity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
+    paddingTop: spacing.sm,
   },
-  heroText: {
+  identityText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xs,
   },
-  // The coffee the user tapped to get here, on tan like the home hero.
-  focus: {
+  cards: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
+  },
+  card: {
+    flex: 1,
+    gap: spacing.sm,
     padding: spacing.lg,
     borderRadius: radii.frame,
     borderCurve: 'continuous',
-    backgroundColor: colors.highlight,
-  },
-  focusText: {
-    flex: 1,
-    gap: 4,
-  },
-  stats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    borderRadius: radii.frame,
-    borderCurve: 'continuous',
-    borderWidth: sizes.hairline,
+    // Only an outline, so no pale block sits on the page.
+    borderWidth: 1,
     borderColor: colors.border,
   },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: spacing.xs,
-  },
-  statRule: {
-    width: sizes.hairline,
-    alignSelf: 'stretch',
-    backgroundColor: colors.border,
-  },
-  row: {
+  // The number with its unit beside it, sharing a baseline.
+  figure: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: sizes.hairline,
-    borderBottomColor: colors.border,
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    columnGap: spacing.xs + 2,
   },
-  rowLast: {
-    borderBottomWidth: 0,
+  track: {
+    height: 6,
+    borderRadius: radii.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
   },
-  rowText: {
-    flex: 1,
-    gap: 2,
+  fill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent,
+  },
+  section: {
+    gap: spacing.xs,
+  },
+  privacy: {
+    marginTop: spacing.sm,
   },
 }));

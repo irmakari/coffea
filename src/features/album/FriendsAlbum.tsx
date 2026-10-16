@@ -26,6 +26,39 @@ export function activityWhen(iso: string, now = new Date()) {
   return t('activity.when.days', { count: days });
 }
 
+// One friend's first: who, which coffee, when, and its drawing. Opens their
+// page on that coffee, unless it already sits on their page.
+export function ActivityRow({ item, last, onPress }: { item: Activity; last: boolean; onPress?: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.item, last && styles.lastItem, pressed && styles.pressed]}
+    >
+      <Avatar
+        uri={item.person.avatarUrl}
+        cacheKey={item.person.avatarPath}
+        name={personName(item.person)}
+        size={40}
+      />
+      <View style={styles.itemText}>
+        <Text numberOfLines={2}>
+          <Text style={styles.strong}>{personName(item.person)}</Text>
+          {t('activity.collectedJoin')}
+          <Text style={styles.strong}>{coffeeName(item.coffee)}</Text>
+        </Text>
+        <Text variant="caption" color="textMuted">
+          {activityWhen(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
+        </Text>
+      </View>
+      <View style={styles.cup}>
+        <CupMark drink={item.coffee} size={46} />
+      </View>
+    </Pressable>
+  );
+}
+
 // Friends' latest firsts: one line each, no photos.
 export function ActivityList({ items }: { items: Activity[] }) {
   return (
@@ -36,38 +69,14 @@ export function ActivityList({ items }: { items: Activity[] }) {
       ) : (
         <View style={styles.list}>
           {items.map((item, index) => (
-            <Pressable
+            <ActivityRow
               key={`${item.person.id}:${item.coffee}`}
-              accessibilityRole="button"
+              item={item}
+              last={index === items.length - 1}
               onPress={() =>
                 router.push({ pathname: '/friends/[id]', params: { id: item.person.id, coffee: item.coffee } })
               }
-              style={({ pressed }) => [
-                styles.item,
-                index === items.length - 1 && styles.lastItem,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Avatar
-                uri={item.person.avatarUrl}
-                cacheKey={item.person.avatarPath}
-                name={personName(item.person)}
-                size={40}
-              />
-              <View style={styles.itemText}>
-                <Text numberOfLines={2}>
-                  <Text style={styles.strong}>{personName(item.person)}</Text>
-                  {t('activity.collectedJoin')}
-                  <Text style={styles.strong}>{coffeeName(item.coffee)}</Text>
-                </Text>
-                <Text variant="caption" color="textMuted">
-                  {activityWhen(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
-                </Text>
-              </View>
-              <View style={styles.cup}>
-                <CupMark drink={item.coffee} size={46} />
-              </View>
-            </Pressable>
+            />
           ))}
         </View>
       )}
