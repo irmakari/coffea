@@ -52,6 +52,11 @@ export const en = {
       other: '{{count}} coffees in your journal',
     },
     latest: 'Latest',
+    seeAll: 'See All',
+    when: {
+      today: 'Today, {{time}}',
+      yesterday: 'Yesterday, {{time}}',
+    },
     earlier: 'Earlier',
     openDiary: 'See the whole diary',
     favorites: 'Favorites',
@@ -71,8 +76,9 @@ export const en = {
       other: '{{count}} coffees',
     },
     dayCoffees: '{{count}} on {{day}}',
-    logOn: 'Log a coffee on {{day}}',
     logOnThisDay: 'Log another coffee on this day',
+    logFirstOnThisDay: 'Log a coffee on this day',
+    noneOnDay: 'No coffees on this day.',
     views: {
       calendar: 'Calendar',
       album: 'Album',
@@ -105,6 +111,7 @@ export const en = {
     albumBody: 'Who has tried the most kinds of coffee, ever.',
     title: 'Lately',
     collected: '{{name}} collected {{coffee}}',
+    collectedJoin: ' collected ',
     progress: '#{{count}} in their album',
     empty: 'When a friend tries a coffee for the first time, it shows up here.',
     error: 'Friends activity did not load. Pull down to try again.',
@@ -498,6 +505,17 @@ export const en = {
         other: '{{count}} coffees',
       },
     },
+    board: {
+      tabs: {
+        week: 'This week',
+        album: 'Album',
+      },
+      none: 'Not on the board',
+      hint: {
+        week: 'Your place among friends this week.',
+        album: 'Kinds of coffee collected, ever.',
+      },
+    },
     card: {
       eyebrow: 'This week',
       nobody: 'Nobody has had a cup yet this week',
@@ -624,6 +642,14 @@ export const en = {
     newTitle: 'Log a coffee',
     editTitle: 'Edit coffee',
     edit: 'Edit',
+    moreActions: 'More',
+    album: {
+      label: 'In your album',
+      first: '{{count}}st time',
+      second: '{{count}}nd time',
+      third: '{{count}}rd time',
+      nth: '{{count}}th time',
+    },
     favorite: {
       add: 'Add to favorites',
       remove: 'Remove from favorites',
@@ -675,8 +701,33 @@ export const en = {
       hide: 'Hide details',
       add: 'Add more details',
     },
+    size: {
+      label: 'Size',
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large',
+    },
+    shots: {
+      label: 'Shots',
+      one: '1 shot',
+      other: '{{count}} shots',
+    },
+    temperature: {
+      label: 'Hot or iced',
+      hot: 'Hot',
+      iced: 'Iced',
+    },
+    venue: {
+      label: 'Where',
+      cafe: 'At a café',
+      home: 'At home',
+      takeaway: 'To go',
+    },
+    caffeine: {
+      label: 'Caffeine',
+      value: 'About {{mg}} mg',
+    },
     cafe: {
-      home: 'Home',
       label: 'Café',
       placeholder: 'Where was it?',
     },

@@ -1,7 +1,7 @@
-import { isCoffeeType, type CoffeeType, type Entry } from '@/features/entries/types';
+import { isCoffeeType, type CoffeeType, type Entry, type Size } from '@/features/entries/types';
 
-// A rough figure for a typical café serving, in milligrams. Cups vary a lot
-// with the beans and the barista, so this is an estimate, never a measure.
+// A rough figure for a typical, medium café serving, in milligrams. Cups vary
+// a lot with the beans and the barista, so this is an estimate, never a measure.
 const caffeineByType: Record<CoffeeType, number> = {
   turkish: 60,
   espresso: 65,
@@ -20,8 +20,22 @@ const caffeineByType: Record<CoffeeType, number> = {
 // A coffee with no type, or one written by hand, counts as an average cup.
 const UNKNOWN_CAFFEINE = 100;
 
+// One shot of espresso.
+const PER_SHOT = 65;
+
+// A brewed coffee scales with the cup. Espresso drinks scale with their shots
+// instead, which a bigger cup mostly fills with milk or water.
+const sizeFactor: Record<Size, number> = {
+  small: 0.75,
+  medium: 1,
+  large: 1.4,
+};
+
 export function caffeineOf(entry: Entry): number {
-  return isCoffeeType(entry.type) ? caffeineByType[entry.type] : UNKNOWN_CAFFEINE;
+  // The shots, when they were given, are the most direct measure there is.
+  if (entry.shots) return entry.shots * PER_SHOT;
+  const base = isCoffeeType(entry.type) ? caffeineByType[entry.type] : UNKNOWN_CAFFEINE;
+  return Math.round(base * (entry.size ? sizeFactor[entry.size] : 1));
 }
 
 export function totalCaffeine(entries: Entry[]): number {

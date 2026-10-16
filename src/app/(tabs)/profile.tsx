@@ -12,7 +12,6 @@ import {
 import {
   Avatar,
   Button,
-  Card,
   ListRow,
   Screen,
   SectionHeader,
@@ -182,7 +181,7 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <SectionHeader title={t("profile.journal")} />
-        <Card style={styles.rows}>
+        <View style={styles.rows}>
           <View style={styles.rowsInner}>
             <ListRow
               label={t("profile.collections")}
@@ -211,12 +210,12 @@ export default function ProfileScreen() {
               onPress={() => router.push("/settings/cup")}
             />
           </View>
-        </Card>
+        </View>
       </View>
 
       <View style={styles.section}>
         <SectionHeader title={t("profile.account")} />
-        <Card style={styles.rows}>
+        <View style={styles.rows}>
           <View style={styles.rowsInner}>
             <ListRow
               label={t("profile.name")}
@@ -230,19 +229,19 @@ export default function ProfileScreen() {
             />
             <ListRow label={t("profile.photo")} onPress={changePhoto} />
           </View>
-        </Card>
+        </View>
       </View>
 
       <View style={styles.section}>
         <SectionHeader title={t("profile.about")} />
-        <Card style={styles.rows}>
+        <View style={styles.rows}>
           <View style={styles.rowsInner}>
             <ListRow
               label={t("brand.name")}
               value={version ? `${t("profile.version")} ${version}` : undefined}
             />
           </View>
-        </Card>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -293,10 +292,10 @@ const styles = StyleSheet.create({
   section: {
     marginTop: spacing.xxl,
   },
-  // The last row's divider is tucked under the card's edge.
+  // Straight on the page, split by hairlines. The last row's divider is
+  // tucked away, so a group ends without a line under it.
   rows: {
-    paddingVertical: 0,
-    paddingBottom: 0,
+    overflow: "hidden",
   },
   rowsInner: {
     marginBottom: -1,

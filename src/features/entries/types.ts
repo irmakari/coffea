@@ -27,6 +27,38 @@ export function isMilkType(value: string | null): value is MilkType {
   return value !== null && (milkTypes as readonly string[]).includes(value);
 }
 
+export const servingSizes = ['small', 'medium', 'large'] as const;
+export type Size = (typeof servingSizes)[number];
+
+export const shotCounts = [1, 2, 3, 4] as const;
+export type Shots = (typeof shotCounts)[number];
+
+export const temperatures = ['hot', 'iced'] as const;
+export type Temperature = (typeof temperatures)[number];
+
+export const venues = ['cafe', 'home', 'takeaway'] as const;
+export type Venue = (typeof venues)[number];
+
+function oneOf<T extends string | number>(list: readonly T[], value: unknown): T | null {
+  return (list as readonly unknown[]).includes(value) ? (value as T) : null;
+}
+
+export const asSize = (value: unknown) => oneOf(servingSizes, value);
+export const asShots = (value: unknown) => oneOf(shotCounts, value);
+export const asTemperature = (value: unknown) => oneOf(temperatures, value);
+export const asVenue = (value: unknown) => oneOf(venues, value);
+
+// Shots are asked about for the drinks made from espresso. Turkish coffee,
+// filter, cold brew and matcha are brewed some other way.
+export function takesShots(type: CoffeeType | null): boolean {
+  return type !== null && type !== 'turkish' && type !== 'filter' && type !== 'coldBrew' && type !== 'matcha';
+}
+
+// A Turkish coffee or an espresso comes in one size.
+export function takesSize(type: CoffeeType | null): boolean {
+  return type !== 'turkish' && type !== 'espresso';
+}
+
 // Milk is asked about for every type but the two that never take any.
 export function takesMilk(type: CoffeeType | null): boolean {
   return type !== null && type !== 'turkish' && type !== 'espresso';
@@ -96,6 +128,11 @@ export type Entry = {
   rating: number | null;
   notes: string | null;
   isFavorite: boolean;
+  size: Size | null;
+  shots: Shots | null;
+  temperature: Temperature | null;
+  // Had at a café, at home, or taken away.
+  venue: Venue | null;
 };
 
 // What the entry form edits. Only `name` is required.
@@ -116,6 +153,10 @@ export type EntryDraft = {
   // Null means "now", decided at the moment of saving.
   consumedAt: string | null;
   notes: string;
+  size: Size | null;
+  shots: Shots | null;
+  temperature: Temperature | null;
+  venue: Venue | null;
 };
 
 export function emptyDraft(currency: string): EntryDraft {
@@ -131,6 +172,10 @@ export function emptyDraft(currency: string): EntryDraft {
     currency,
     consumedAt: null,
     notes: '',
+    size: null,
+    shots: null,
+    temperature: null,
+    venue: null,
   };
 }
 
@@ -159,6 +204,10 @@ export function draftFromEntry(entry: Entry, fallbackCurrency: string): EntryDra
     currency: entry.currency ?? fallbackCurrency,
     consumedAt: entry.consumedAt,
     notes: entry.notes ?? '',
+    size: entry.size,
+    shots: entry.shots,
+    temperature: entry.temperature,
+    venue: entry.venue,
   };
 }
 

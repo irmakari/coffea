@@ -40,7 +40,32 @@ export function ListRow({ label, value, onPress }: ListRowProps) {
   );
 }
 
-export function SectionHeader({ title }: { title: string }) {
+type SectionHeaderProps = {
+  title: string;
+  // The App Store's style: a bold title with an optional "See All" beside it.
+  large?: boolean;
+  action?: { label: string; onPress: () => void };
+};
+
+export function SectionHeader({ title, large = false, action }: SectionHeaderProps) {
+  if (large) {
+    return (
+      <View style={styles.largeSection}>
+        <Text variant="heading" accessibilityRole="header" style={styles.largeTitle}>
+          {title}
+        </Text>
+        {action ? (
+          <Pressable accessibilityRole="button" onPress={action.onPress} hitSlop={spacing.sm}>
+            {({ pressed }) => (
+              <Text variant="bodyStrong" color="textSecondary" style={pressed && styles.pressed}>
+                {action.label}
+              </Text>
+            )}
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
   return (
     // Mocha, not the paler muted tone: at this size that one is hard to read
     // on the warm page.
@@ -78,5 +103,15 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.sm,
+  },
+  largeSection: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  largeTitle: {
+    flexShrink: 1,
   },
 });
