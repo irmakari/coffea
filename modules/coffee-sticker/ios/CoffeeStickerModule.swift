@@ -4,6 +4,14 @@ import Vision
 
 // Lifts the subject of a coffee photo out of its background, the way a long
 // press does in Photos, and keeps the result as a transparent PNG.
+// What became of one photo. Only `none` is a lasting answer; a photo that
+// could not be read or worked on is tried again next time.
+private enum Outcome {
+  case sticker(Data)
+  case none
+  case failed
+}
+
 public class CoffeeStickerModule: Module {
   private let context = CIContext()
 
@@ -20,41 +28,49 @@ public class CoffeeStickerModule: Module {
       if manager.fileExists(atPath: file.path) { return file.absoluteString }
       if manager.fileExists(atPath: none.path) { return nil }
 
-      guard let png = self.makeSticker(source: source, size: CGFloat(size)) else {
+      switch self.makeSticker(source: source, size: CGFloat(size)) {
+      case .sticker(let png):
+        try png.write(to: file, options: .atomic)
+        return file.absoluteString
+      case .none:
         manager.createFile(atPath: none.path, contents: nil)
         return nil
+      case .failed:
+        return nil
       }
-      try png.write(to: file, options: .atomic)
-      return file.absoluteString
     }
   }
 
-  private func makeSticker(source: String, size: CGFloat) -> Data? {
-    guard #available(iOS 17.0, *) else { return nil }
+  private func makeSticker(source: String, size: CGFloat) -> Outcome {
+    guard #available(iOS 17.0, *) else { return .none }
+    // A photo that did not download, or Vision refusing to run (as it does in
+    // the Simulator), says nothing about the photo itself.
     guard let url = URL(string: source),
       let data = try? Data(contentsOf: url),
       let image = CIImage(data: data, options: [.applyOrientationProperty: true])
-    else { return nil }
+    else { return .failed }
 
     let handler = VNImageRequestHandler(ciImage: image)
     let request = VNGenerateForegroundInstanceMaskRequest()
-    guard (try? handler.perform([request])) != nil,
-      let observation = request.results?.first,
-      let buffer = try? observation.generateMaskedImage(
-        ofInstances: observation.allInstances, from: handler, croppedToInstancesExtent: true)
-    else { return nil }
+    guard (try? handler.perform([request])) != nil else { return .failed }
+    guard let observation = request.results?.first else { return .none }
+    guard let buffer = try? observation.generateMaskedImage(
+      ofInstances: observation.allInstances, from: handler, croppedToInstancesExtent: true)
+    else { return .failed }
 
     var sticker = CIImage(cvPixelBuffer: buffer)
     // A "subject" that fills the frame is the table or the whole scene, not a cup.
     let covered = (sticker.extent.width * sticker.extent.height) / (image.extent.width * image.extent.height)
-    if covered > 0.85 { return nil }
+    if covered > 0.85 { return .none }
 
     let scale = min(1, size / max(sticker.extent.width, sticker.extent.height))
     if scale < 1 {
       sticker = sticker.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
     }
-    guard let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
-    return context.pngRepresentation(of: sticker, format: .RGBA8, colorSpace: space)
+    guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+      let png = context.pngRepresentation(of: sticker, format: .RGBA8, colorSpace: space)
+    else { return .failed }
+    return .sticker(png)
   }
 
   private func folder() throws -> URL {
