@@ -1,19 +1,20 @@
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
 import { Avatar, CupMark, SectionHeader, Text } from '@/components/ui';
 import { isCoffeeType } from '@/features/entries/types';
 import { personName } from '@/features/friends/friendsApi';
 import { t } from '@/i18n';
-import { colors, fonts, sizes, spacing } from '@/theme';
+import { colors, fonts, sizes, spacing, themed } from '@/theme';
 
 import type { Activity } from './albumFriendsApi';
 
-function coffeeName(coffee: string) {
+export function coffeeName(coffee: string) {
   return isCoffeeType(coffee) ? t(`coffeeTypes.${coffee}`) : coffee;
 }
 
 // "Today", "Yesterday", "3 days ago", by the phone's calendar days.
-function when(iso: string, now = new Date()) {
+export function activityWhen(iso: string, now = new Date()) {
   const day = new Date(iso);
   const days = Math.round(
     (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
@@ -35,9 +36,17 @@ export function ActivityList({ items }: { items: Activity[] }) {
       ) : (
         <View style={styles.list}>
           {items.map((item, index) => (
-            <View
+            <Pressable
               key={`${item.person.id}:${item.coffee}`}
-              style={[styles.item, index === items.length - 1 && styles.lastItem]}
+              accessibilityRole="button"
+              onPress={() =>
+                router.push({ pathname: '/friends/[id]', params: { id: item.person.id, coffee: item.coffee } })
+              }
+              style={({ pressed }) => [
+                styles.item,
+                index === items.length - 1 && styles.lastItem,
+                pressed && styles.pressed,
+              ]}
             >
               <Avatar
                 uri={item.person.avatarUrl}
@@ -52,13 +61,13 @@ export function ActivityList({ items }: { items: Activity[] }) {
                   <Text style={styles.strong}>{coffeeName(item.coffee)}</Text>
                 </Text>
                 <Text variant="caption" color="textMuted">
-                  {when(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
+                  {activityWhen(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
                 </Text>
               </View>
               <View style={styles.cup}>
                 <CupMark drink={item.coffee} size={46} />
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
@@ -66,7 +75,7 @@ export function ActivityList({ items }: { items: Activity[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   // Straight on the page, split by hairlines, like the home tab's list.
   list: {},
   item: {
@@ -79,6 +88,9 @@ const styles = StyleSheet.create({
   },
   lastItem: {
     borderBottomWidth: 0,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   // The drink alone, straight on the page.
   cup: {
@@ -94,4 +106,4 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-});
+}));

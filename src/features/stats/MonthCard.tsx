@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { CupMark, Icon, Text } from '@/components/ui';
 import { isCoffeeType, type Entry } from '@/features/entries/types';
 import { formatCurrency, formatDate, formatNumber, t } from '@/i18n';
-import { colors, radii, spacing } from '@/theme';
+import { colors, radii, spacing, themed, withAlpha } from '@/theme';
 
 import { computeStats, countByThisTimeLastMonth, entriesInPeriod } from './stats';
 
@@ -136,7 +136,7 @@ export function MonthCard({ entries }: { entries: Entry[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     padding: spacing.xl - 4,
     borderRadius: radii.frame,
@@ -164,7 +164,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radii.control,
-    backgroundColor: colors.surface,
+    // Drawn in, not laid over: an outline in the card's own ink.
+    borderWidth: 1,
+    borderColor: withAlpha(colors.text, 0.14),
   },
   figureGap: {
     flex: 1,
@@ -178,4 +180,4 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-});
+}));

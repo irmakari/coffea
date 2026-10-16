@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 
-import { Button, Chip, EmptyState, LoadingState, PageHeader, Screen, Text } from '@/components/ui';
+import { Button, Chip, EmptyState, LoadingState, PageHeader, Screen, SegmentedControl, Text } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { metrics, rank, weekRange, type BoardMetric, type Week } from '@/features/leaderboard/leaderboardApi';
 import { Podium } from '@/features/leaderboard/Podium';
@@ -9,37 +9,7 @@ import { standingName } from '@/features/leaderboard/StandingRow';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { formatDate, t } from '@/i18n';
-import { colors, fonts, radii, sizes, spacing } from '@/theme';
-
-// Two options side by side on one track, in the way of iOS.
-function Segmented<T extends string | number>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <View style={styles.track} accessibilityRole="tablist">
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <Pressable
-            key={String(option.value)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && styles.segmentSelected]}
-          >
-            <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{option.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+import { colors, sizes, spacing, themed } from '@/theme';
 
 const weeks: { week: Week; label: () => string }[] = [
   { week: 0, label: () => t('leaderboard.weeks.this') },
@@ -81,7 +51,7 @@ export default function LeaderboardScreen() {
       />
 
       <View style={styles.controls}>
-        <Segmented
+        <SegmentedControl
           options={weeks.map((option) => ({ value: option.week, label: option.label() }))}
           value={week}
           onChange={setWeek}
@@ -148,38 +118,10 @@ export default function LeaderboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   controls: {
     gap: spacing.md,
     marginTop: spacing.lg,
-  },
-  track: {
-    flexDirection: 'row',
-    padding: 3,
-    borderRadius: radii.pill,
-    backgroundColor: 'rgba(232, 222, 212, 0.7)',
-  },
-  segment: {
-    flex: 1,
-    minHeight: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.pill,
-  },
-  segmentSelected: {
-    backgroundColor: colors.surface,
-    shadowColor: colors.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  segmentText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  segmentTextSelected: {
-    color: colors.text,
   },
   chips: {
     flexDirection: 'row',
@@ -205,4 +147,4 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-});
+}));

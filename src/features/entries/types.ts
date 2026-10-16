@@ -59,6 +59,12 @@ export function takesSize(type: CoffeeType | null): boolean {
   return type !== 'turkish' && type !== 'espresso';
 }
 
+// Hot or iced is asked only where both are ordered. Turkish coffee and
+// espresso come hot; cold brew and an iced latte say it in their name.
+export function takesTemperature(type: CoffeeType | null): boolean {
+  return type !== 'turkish' && type !== 'espresso' && type !== 'coldBrew' && type !== 'icedLatte';
+}
+
 // Milk is asked about for every type but the two that never take any.
 export function takesMilk(type: CoffeeType | null): boolean {
   return type !== null && type !== 'turkish' && type !== 'espresso';

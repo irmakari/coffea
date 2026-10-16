@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router/js-tabs';
 
 import { TabBar } from '@/components/navigation/TabBar';
+import { useReminderTaps } from '@/features/reminders/streakReminder';
 import { colors } from '@/theme';
 
 export default function TabsLayout() {
+  useReminderTaps();
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}

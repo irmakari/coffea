@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { CoffeePhoto, IconButton, Text } from '@/components/ui';
 import { useSticker } from '@/features/entries/sticker';
 import type { Entry } from '@/features/entries/types';
 import { t } from '@/i18n';
-import { palette, radii, spacing } from '@/theme';
+import { colors, radii, spacing, themed } from '@/theme';
 
 const ITEM_HEIGHT = 104;
 const ITEM_WIDTH = 84;
@@ -15,10 +15,10 @@ const GAP = spacing.sm;
 // The share of each coffee the ledge covers, like books in a wall pocket.
 const LEDGE_HEIGHT = 40;
 
-// The ledges take turns through the warm part of the palette.
-const ledges = [palette.latte, palette.oatTaupe, palette.mocha];
-
+// The ledges take turns through the theme's tints, light to deep. Read as
+// the shelf draws, so they follow a theme change.
 export function ledgeColor(index: number) {
+  const ledges = [colors.highlight, colors.borderStrong, colors.textSecondary];
   return ledges[index % ledges.length];
 }
 
@@ -56,7 +56,7 @@ export function StickerShelf({ title, detail, entries, color }: StickerShelfProp
   const scroller = useRef<ScrollView>(null);
   const offset = useRef(0);
   const [width, setWidth] = useState(0);
-  const contentWidth = entries.length * (ITEM_WIDTH + GAP) - GAP;
+  const contentWidth = entries.length * (ITEM_WIDTH + GAP) - GAP + (spacing.lg + spacing.xs) * 2;
   const scrollable = contentWidth > width;
 
   const step = (direction: 1 | -1) => {
@@ -105,7 +105,7 @@ export function StickerShelf({ title, detail, entries, color }: StickerShelfProp
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   shelf: {
     gap: spacing.md,
   },
@@ -123,9 +123,11 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     gap: spacing.xs,
   },
+  // Set in past the screws, so the first coffee never stands on one.
   row: {
     gap: GAP,
     alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg + spacing.xs,
     paddingBottom: LEDGE_HEIGHT / 3,
   },
   item: {
@@ -141,9 +143,13 @@ const styles = StyleSheet.create({
     width: ITEM_WIDTH,
     height: ITEM_HEIGHT,
   },
+  // Until its sticker is cut, a photo stands in a white print border, so it
+  // reads as a picture tucked in the pocket rather than a loose square.
   photo: {
     width: ITEM_WIDTH - spacing.md,
     borderRadius: 12,
+    borderWidth: 3,
+    borderColor: colors.surface,
   },
   // A strip of tinted acrylic held on by two screws.
   ledge: {
@@ -166,4 +172,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: 'rgba(255, 252, 248, 0.85)',
   },
-});
+}));

@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 
 import { CoffeePhoto, Text } from '@/components/ui';
-import { colors, radii, spacing } from '@/theme';
+import { colors, spacing, themed } from '@/theme';
 
 import { countLabel, coverOf, type Collection } from './collections';
 
@@ -45,23 +45,20 @@ export function CollectionTile({ collection, style }: CollectionTileProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  tile: {
-    padding: spacing.sm,
-    borderRadius: radii.frame,
-    backgroundColor: colors.surface,
-  },
+const styles = themed(() => ({
+  // Like an album in Music: the cover straight on the page, its words below.
+  tile: {},
   pressed: {
     opacity: 0.7,
   },
   cover: {
-    borderRadius: radii.frame - spacing.sm,
-    backgroundColor: colors.background,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: colors.highlight,
   },
   text: {
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
     gap: 2,
   },
-});
+}));

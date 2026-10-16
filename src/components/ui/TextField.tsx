@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, radii, sizes, spacing, typography } from '@/theme';
+import { colors, radii, sizes, spacing, themed, typography } from '@/theme';
 
 import { Text } from './Text';
 
@@ -90,7 +90,7 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   container: {
     gap: spacing.sm,
   },
@@ -150,4 +150,4 @@ const styles = StyleSheet.create({
   invalid: {
     borderColor: colors.danger,
   },
-});
+}));

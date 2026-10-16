@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { CupMark, Text } from "@/components/ui";
 import { formatDate, weekdayInitials } from "@/i18n";
-import { colors, radii, spacing } from "@/theme";
+import { colors, radii, spacing, themed, withAlpha } from "@/theme";
 
 import { useSticker } from "./sticker";
 import type { Entry } from "./types";
@@ -111,7 +111,8 @@ export function MonthCalendar({
                   style={({ pressed }) => [
                     styles.day,
                     today === day && !hasCoffee && styles.today,
-                    selectedDay === day && styles.selected,
+                    selectedDay === day &&
+                      (hasCoffee ? styles.selected : styles.selectedEmpty),
                     future && styles.future,
                     pressed && !hasCoffee && styles.pressed,
                   ]}
@@ -125,6 +126,7 @@ export function MonthCalendar({
                   ) : (
                     <Text
                       variant="label"
+                      color={selectedDay === day ? "textOnAccent" : "text"}
                       maxFontSizeMultiplier={1.1}
                       style={styles.dayNumber}
                     >
@@ -192,7 +194,7 @@ function DayFace({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   calendar: {
     gap: GAP,
   },
@@ -215,7 +217,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
     borderRadius: radii.control - 2,
     // A shade darker than the page the calendar sits on.
-    backgroundColor: "rgba(232, 222, 212, 0.6)",
+    backgroundColor: withAlpha(colors.border, 0.6),
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -223,8 +225,15 @@ const styles = StyleSheet.create({
   today: {
     borderColor: colors.borderStrong,
   },
+  // Picked: a dark ring round a coffee's picture, or the day filled dark,
+  // so it never reads as today's lighter outline.
   selected: {
+    borderWidth: 3,
     borderColor: colors.accent,
+  },
+  selectedEmpty: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accent,
   },
   future: {
     opacity: 0.35,
@@ -260,4 +269,4 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     color: colors.textOnAccent,
   },
-});
+}));

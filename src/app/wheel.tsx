@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 import { Button, Card, CupMark, PageHeader, Screen, Text } from '@/components/ui';
@@ -7,13 +7,13 @@ import { startLog } from '@/features/entries/logDraft';
 import { coffeeTypes, type CoffeeType } from '@/features/entries/types';
 import { t } from '@/i18n';
 import { successFeedback, tapFeedback } from '@/lib/haptics';
-import { colors, fonts, palette, spacing } from '@/theme';
+import { colors, fonts, spacing, themed } from '@/theme';
 
 const WHEEL_SIZE = 300;
 const RADIUS = WHEEL_SIZE / 2;
 const drinks = coffeeTypes.filter((type): type is Exclude<CoffeeType, 'other'> => type !== 'other');
 const SLICE = 360 / drinks.length;
-const sliceColors = [palette.latte, palette.softWhite, palette.oatTaupe, palette.warmCream];
+const sliceColors = () => [colors.highlight, colors.surface, colors.borderStrong, colors.background];
 
 // A point on the rim, `angle` degrees clockwise from the top.
 function rim(angle: number, radius = RADIUS) {
@@ -36,7 +36,7 @@ function Wheel() {
           <G key={drink}>
             <Path
               d={slicePath(index)}
-              fill={sliceColors[index % sliceColors.length]}
+              fill={sliceColors()[index % 4]}
               stroke={colors.border}
               strokeWidth={1}
             />
@@ -121,7 +121,7 @@ export default function WheelScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   stage: {
     alignItems: 'center',
     marginVertical: spacing.xl,
@@ -156,4 +156,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-});
+}));

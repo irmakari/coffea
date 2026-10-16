@@ -152,13 +152,16 @@ export function computeStreak(entries: Entry[], now = new Date()): Streak {
   return { current: runEndingOn(loggedToday ? now : shiftDays(now, -1)), best, loggedToday };
 }
 
-// The last `count` days, oldest first, each with the newest coffee logged on
-// it. Expects the entries newest first.
+// The last `count` days, oldest first, each with one coffee logged on it.
+// Expects the entries newest first.
 export function recentDays(entries: Entry[], count: number, now = new Date()): { date: Date; entry: Entry | null }[] {
+  // Each day's newest coffee, unless an earlier one that day has a photo:
+  // a picture of the day says more than a drawing of it.
   const newest = new Map<string, Entry>();
   for (const entry of entries) {
     const key = dayKey(new Date(entry.consumedAt));
-    if (!newest.has(key)) newest.set(key, entry);
+    const kept = newest.get(key);
+    if (!kept || (!kept.photoUrl && entry.photoUrl)) newest.set(key, entry);
   }
   return Array.from({ length: count }, (_, index) => {
     const date = shiftDays(now, index - (count - 1));

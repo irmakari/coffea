@@ -1,9 +1,9 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Avatar, Text } from '@/components/ui';
 import { personName } from '@/features/friends/friendsApi';
 import { formatNumber, t } from '@/i18n';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed } from '@/theme';
 
 import type { Metric, Ranked } from './leaderboardApi';
 
@@ -62,7 +62,7 @@ export function StandingRow({ standing, metric, isMe, compact = false }: Standin
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -89,4 +89,4 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
   },
-});
+}));

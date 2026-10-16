@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Avatar, Icon, Text } from '@/components/ui';
 import { personName } from '@/features/friends/friendsApi';
 import { formatNumber, t } from '@/i18n';
-import { fonts, palette, radii, sizes, spacing } from '@/theme';
+import { colors, fonts, radii, sizes, spacing, themed, withAlpha } from '@/theme';
 
 import { rank, type Metric, type Ranked, type Standing } from './leaderboardApi';
 import { standingName, valueLabel } from './StandingRow';
@@ -15,13 +15,26 @@ const SHOWN = 3;
 export const boardTabs = ['week', 'album'] as const;
 type BoardTab = (typeof boardTabs)[number];
 
+// Read live from the theme, so the board follows it.
 export const ink = {
-  card: palette.espresso,
-  raised: palette.darkRoast,
-  text: palette.softWhite,
-  muted: palette.oatTaupe,
-  accent: palette.latte,
-  track: 'rgba(255, 252, 248, 0.12)',
+  get card() {
+    return colors.boardCard;
+  },
+  get raised() {
+    return colors.boardRaised;
+  },
+  get text() {
+    return colors.boardText;
+  },
+  get muted() {
+    return colors.boardMuted;
+  },
+  get accent() {
+    return colors.boardAccent;
+  },
+  get track() {
+    return withAlpha(colors.boardText, 0.12);
+  },
 };
 
 // The place in a circle: the leader's filled in latte, the rest outlined.
@@ -150,13 +163,13 @@ export function FriendsBoard({ week, album, userId }: FriendsBoardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     padding: spacing.xl - 4,
     gap: spacing.lg,
     borderRadius: radii.frame,
     backgroundColor: ink.card,
-    shadowColor: palette.espresso,
+    shadowColor: colors.boardCard,
     shadowOpacity: 0.25,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -296,4 +309,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-});
+}));

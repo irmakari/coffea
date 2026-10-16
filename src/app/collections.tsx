@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Card, Icon, PageHeader, Screen, SectionHeader, Text } from '@/components/ui';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
@@ -8,9 +8,8 @@ import { collect, collectBy, type Collection } from '@/features/collections/coll
 import { CollectionTile } from '@/features/collections/CollectionTile';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { MonthCard } from '@/features/stats/MonthCard';
-import { StreakCard } from '@/features/stats/StreakCard';
 import { formatNumber, t } from '@/i18n';
-import { colors, radii, spacing } from '@/theme';
+import { colors, radii, spacing, themed } from '@/theme';
 
 function inPairs(collections: Collection[]): Collection[][] {
   const pairs: Collection[][] = [];
@@ -36,7 +35,6 @@ export default function CollectionsScreen() {
 
       <View style={styles.tracking}>
         <MonthCard entries={entries} />
-        <StreakCard entries={entries} />
       </View>
 
       <View style={[styles.pair, styles.kept]}>
@@ -98,7 +96,7 @@ export default function CollectionsScreen() {
       ) : null}
 
       {types.length === 0 && cafes.length === 0 ? (
-        <Card style={styles.hint}>
+        <Card outline style={styles.hint}>
           <Text color="textSecondary">{t('collections.hint')}</Text>
         </Card>
       ) : null}
@@ -106,7 +104,7 @@ export default function CollectionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   tracking: {
     marginTop: spacing.xl,
     gap: spacing.md,
@@ -130,7 +128,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     padding: spacing.xl - 4,
     borderRadius: radii.frame,
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   pressed: {
     opacity: 0.6,
@@ -161,4 +160,4 @@ const styles = StyleSheet.create({
   hint: {
     marginTop: spacing.md,
   },
-});
+}));

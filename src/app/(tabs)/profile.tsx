@@ -19,22 +19,34 @@ import {
 } from "@/components/ui";
 import { deleteAccount, signOut } from "@/features/auth/authApi";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { coffeeLabel, useFavoriteCoffee } from "@/features/profile/favoriteCoffee";
+import { buildAlbum, collectedCount } from "@/features/album/album";
 import { askPhotoSource } from "@/features/entries/askPhotoSource";
+import { useEntries } from "@/features/entries/EntriesProvider";
 import {
   CameraDeniedError,
   pickPhoto,
   type PhotoSource,
 } from "@/features/entries/pickPhoto";
 import { isCoffeeType } from "@/features/entries/types";
+import { computeStreak } from "@/features/stats/stats";
 import { AVATAR_SIZE, useProfile } from "@/features/profile/ProfileProvider";
 import { useTabCup } from "@/features/profile/tabCup";
-import { t } from "@/i18n";
-import { colors, spacing } from "@/theme";
+import { reminderTime, useReminderSettings } from "@/features/reminders/streakReminder";
+import { useTheme } from "@/features/theme/theme";
+import { currencyLabel, formatDate, formatNumber, t } from "@/i18n";
+import { colors, radii, sizes, spacing, themed } from "@/theme";
 
 export default function ProfileScreen() {
   const { session } = useAuth();
   const { profile, setAvatar, removeAvatar } = useProfile();
   const cup = useTabCup();
+  const { entries } = useEntries();
+  const streak = computeStreak(entries);
+  const album = buildAlbum(entries);
+  const theme = useTheme();
+  const reminder = useReminderSettings();
+  const favorite = useFavoriteCoffee();
   const [signingOut, setSigningOut] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -168,6 +180,30 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* The journal at a glance, the way a friend's page shows them. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("profile.stats")}
+        onPress={() => router.push("/stats")}
+        style={({ pressed }) => [styles.summary, pressed && styles.pressed]}
+      >
+        {[
+          { value: formatNumber(entries.length), label: t("profile.summary.coffees") },
+          { value: formatNumber(streak.current), label: t("profile.summary.streak") },
+          {
+            value: `${formatNumber(collectedCount(album))}/${formatNumber(album.length)}`,
+            label: t("profile.summary.album"),
+          },
+        ].map((stat, index) => (
+          <View key={stat.label} style={[styles.stat, index > 0 && styles.statDivided]}>
+            <Text variant="heading">{stat.value}</Text>
+            <Text variant="caption" color="textSecondary" numberOfLines={1}>
+              {stat.label}
+            </Text>
+          </View>
+        ))}
+      </Pressable>
+
       {failure ? (
         <Text
           variant="small"
@@ -196,8 +232,22 @@ export default function ProfileScreen() {
               onPress={() => router.push("/wheel")}
             />
             <ListRow
+              label={t("profile.favorite")}
+              value={favorite ? coffeeLabel(favorite) : t("profile.favoriteNone")}
+              onPress={() => router.push("/settings/favorite")}
+            />
+            <ListRow
+              label={t("profile.reminder")}
+              value={
+                reminder.enabled
+                  ? formatDate(reminderTime(reminder), "time")
+                  : t("profile.reminderOff")
+              }
+              onPress={() => router.push("/settings/reminder")}
+            />
+            <ListRow
               label={t("profile.currency")}
-              value={profile.preferredCurrency}
+              value={currencyLabel(profile.preferredCurrency)}
               onPress={() => router.push("/settings/currency")}
             />
             <ListRow
@@ -208,6 +258,11 @@ export default function ProfileScreen() {
                   : t("settings.cup.classic")
               }
               onPress={() => router.push("/settings/cup")}
+            />
+            <ListRow
+              label={t("profile.theme")}
+              value={t(`settings.theme.names.${theme}`)}
+              onPress={() => router.push("/settings/theme")}
             />
           </View>
         </View>
@@ -264,7 +319,25 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
+  summary: {
+    flexDirection: "row",
+    marginTop: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.frame,
+    borderCurve: "continuous",
+    borderWidth: sizes.hairline,
+    borderColor: colors.border,
+  },
+  stat: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  statDivided: {
+    borderLeftWidth: sizes.hairline,
+    borderLeftColor: colors.border,
+  },
   identity: {
     flexDirection: "row",
     alignItems: "center",
@@ -304,4 +377,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxxl,
     gap: spacing.sm,
   },
-});
+}));

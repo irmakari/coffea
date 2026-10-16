@@ -1,12 +1,11 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,23 +15,31 @@ import {
   Card,
   CupMark,
   EmptyState,
-  Icon,
   LoadingState,
   SectionHeader,
   Text,
 } from "@/components/ui";
-import { buildAlbum, collectedCount } from "@/features/album/album";
-import { saveDiaryView } from "@/features/album/diaryView";
+import { AlbumGlance } from "@/features/album/AlbumGlance";
 import { useEntries } from "@/features/entries/EntriesProvider";
 import {
-  EntryCard,
   EntryRow,
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
+import { TodayCard } from "@/features/home/TodayCard";
+import { StreakCard } from "@/features/stats/StreakCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
+import { useHeroStatusBar } from "@/features/theme/theme";
 import { formatDate, formatNumber, t, type TranslationKey } from "@/i18n";
-import { colors, contentColumn, radii, spacing } from "@/theme";
+import {
+  colors,
+  contentColumn,
+  isDarkHero,
+  isDarkTheme,
+  radii,
+  spacing,
+  themed,
+} from "@/theme";
 
 const EARLIER_COUNT = 3;
 const FAVORITES_COUNT = 8;
@@ -57,26 +64,41 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
       <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
         <View style={contentColumn}>
           <View style={styles.masthead}>
-            <Text variant="subheading">{t("brand.name")}</Text>
+            <Text variant="subheading" color="heroText">
+              {t("brand.name")}
+            </Text>
             {/* iOS would spin behind the status bar, which the hero runs
                 under, so the hero shows the reload itself. */}
             {refreshing && Platform.OS === "ios" ? (
-              <ActivityIndicator size="small" color={colors.accentPressed} />
+              <ActivityIndicator size="small" color={colors.heroTextSecondary} />
             ) : (
-              <Text variant="caption">{formatDate(now, "day")}</Text>
+              <Text variant="caption" color="heroText">
+                {formatDate(now, "day")}
+              </Text>
             )}
           </View>
 
           <View style={styles.heroBody}>
             <View style={styles.heroText}>
-              <Text variant="display" accessibilityRole="header">
-                {profile.displayName
-                  ? t("home.greetingWithName", {
-                      greeting,
-                      name: profile.displayName,
-                    })
-                  : greeting}
-              </Text>
+              {/* The greeting keeps to one line, shrinking a little where it
+                  must, and the name sits under it, so "Good afternoon" is
+                  never split. */}
+              <View accessible accessibilityRole="header">
+                <Text
+                  variant="display"
+                  color="heroText"
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                >
+                  {profile.displayName ? `${greeting},` : greeting}
+                </Text>
+                {profile.displayName ? (
+                  <Text variant="display" color="heroText" numberOfLines={1}>
+                    {profile.displayName}
+                  </Text>
+                ) : null}
+              </View>
               <Text style={styles.heroLine}>
                 {count === 0
                   ? t("home.prompt")
@@ -89,6 +111,7 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
           </View>
 
           <Button
+            variant="hero"
             label={t("home.logAction")}
             onPress={() => router.push("/log")}
             style={styles.heroAction}
@@ -99,53 +122,23 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
   );
 }
 
-// How far the album has come, and the way into it.
-function AlbumCard() {
-  const { entries } = useEntries();
-  const album = useMemo(() => buildAlbum(entries), [entries]);
-  const collected = collectedCount(album);
-
-  const open = () => {
-    saveDiaryView("album");
-    router.navigate("/diary");
-  };
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={open}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <Card style={styles.albumCard}>
-        <View style={styles.albumText}>
-          <Text variant="subheading">{t("album.home.title")}</Text>
-          <Text variant="small" color="textSecondary">
-            {collected === 0
-              ? t("album.home.empty")
-              : t("album.home.progress", {
-                  collected: formatNumber(collected),
-                  total: formatNumber(album.length),
-                })}
-          </Text>
-          <View style={styles.albumTrack}>
-            <View
-              style={[
-                styles.albumFill,
-                { width: `${(collected / album.length) * 100}%` },
-              ]}
-            />
-          </View>
-        </View>
-        <Icon name="chevronRight" size={16} color="textMuted" />
-      </Card>
-    </Pressable>
-  );
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { entries, status, reload } = useEntries();
   const [refreshing, setRefreshing] = useState(false);
+
+  useHeroStatusBar();
+
+  // Once the hero has scrolled away, the strip behind the clock takes the
+  // page's colour, so no band of tan is left floating over the list.
+  const heroHeight = useRef(0);
+  const [pastHero, setPastHero] = useState(false);
+  const onScroll = (y: number) => {
+    const past = heroHeight.current > 0 && y > heroHeight.current - insets.top;
+    if (past === pastHero) return;
+    setPastHero(past);
+    if (isDarkHero()) setStatusBarStyle(past && !isDarkTheme() ? "dark" : "light");
+  };
 
   const refresh = async () => {
     setRefreshing(true);
@@ -153,8 +146,18 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const [latest, ...rest] = entries;
-  const earlier = rest.slice(0, EARLIER_COUNT);
+  const [latest] = entries;
+  // Today's coffees lead the page; the ones before them follow as earlier.
+  const now = new Date();
+  const today = entries.filter((entry) => {
+    const at = new Date(entry.consumedAt);
+    return (
+      at.getFullYear() === now.getFullYear() &&
+      at.getMonth() === now.getMonth() &&
+      at.getDate() === now.getDate()
+    );
+  });
+  const earlier = entries.slice(today.length, today.length + EARLIER_COUNT);
   const favorites = entries
     .filter((entry) => entry.isFavorite)
     .slice(0, FAVORITES_COUNT);
@@ -169,6 +172,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         // The hero is tan to the very top, behind the status bar.
         contentInsetAdjustmentBehavior="never"
+        onScroll={(event) => onScroll(event.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={32}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -182,7 +187,13 @@ export default function HomeScreen() {
           />
         }
       >
-        <Hero count={entries.length} refreshing={refreshing} />
+        <View
+          onLayout={(event) => {
+            heroHeight.current = event.nativeEvent.layout.height;
+          }}
+        >
+          <Hero count={entries.length} refreshing={refreshing} />
+        </View>
 
         {!latest ? (
           <View style={[contentColumn, styles.body]}>
@@ -212,16 +223,18 @@ export default function HomeScreen() {
             <View>
               <SectionHeader
                 large
-                title={t("home.latest")}
+                title={t("home.today.title")}
                 action={{
                   label: t("home.seeAll"),
                   onPress: () => router.navigate("/diary"),
                 }}
               />
-              <EntryCard entry={latest} />
+              <TodayCard today={today} />
             </View>
 
-            <AlbumCard />
+            <StreakCard entries={entries} />
+
+            <AlbumGlance />
 
             {favorites.length > 0 ? (
               <View>
@@ -265,26 +278,18 @@ export default function HomeScreen() {
                     />
                   ))}
                 </View>
-                {rest.length > EARLIER_COUNT ? (
-                  <Button
-                    variant="quiet"
-                    label={t("home.openDiary")}
-                    onPress={() => router.navigate("/diary")}
-                    style={styles.openDiary}
-                  />
-                ) : null}
               </View>
             ) : null}
           </View>
         )}
       </ScrollView>
       {/* Keeps the clock and battery readable once content scrolls beneath them. */}
-      <View style={[styles.statusBar, { height: insets.top }]} />
+      <View style={[styles.statusBar, pastHero && styles.statusBarPage, { height: insets.top }]} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -294,7 +299,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
+  },
+  statusBarPage: {
+    backgroundColor: colors.background,
   },
   backdrop: {
     position: "absolute",
@@ -302,7 +310,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: "50%",
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
   },
   content: {
     flexGrow: 1,
@@ -313,7 +321,7 @@ const styles = StyleSheet.create({
   hero: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xl,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
     borderBottomLeftRadius: radii.frame + 6,
     borderBottomRightRadius: radii.frame + 6,
   },
@@ -335,7 +343,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroLine: {
-    color: colors.accentPressed,
+    color: colors.heroTextSecondary,
   },
   heroAction: {
     marginTop: spacing.xl,
@@ -359,31 +367,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     gap: spacing.md,
   },
-  albumCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.lg,
-  },
-  albumText: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  albumTrack: {
-    height: 6,
-    marginTop: spacing.sm,
-    borderRadius: radii.pill,
-    backgroundColor: colors.border,
-    overflow: "hidden",
-  },
-  albumFill: {
-    height: "100%",
-    borderRadius: radii.pill,
-    backgroundColor: colors.accent,
-  },
   pressed: {
     opacity: 0.7,
   },
-  openDiary: {
-    marginTop: spacing.xs,
-  },
-});
+}));

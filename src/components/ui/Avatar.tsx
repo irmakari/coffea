@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radii } from '@/theme';
+import { colors, radii, themed } from '@/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -43,7 +43,7 @@ export function Avatar({ uri, cacheKey, name, size = 72 }: AvatarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   circle: {
     borderRadius: radii.pill,
     // Tan, so an initial stands out on the white cards it often sits on.
@@ -52,4 +52,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-});
+}));

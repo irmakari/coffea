@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import {
   Button,
@@ -18,7 +18,7 @@ import { useBucketList } from '@/features/bucketList/BucketListProvider';
 import { startLog } from '@/features/entries/logDraft';
 import { t } from '@/i18n';
 import { tapFeedback } from '@/lib/haptics';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed } from '@/theme';
 
 function openItem(id?: string) {
   router.push(id ? { pathname: '/bucket-list/item', params: { id } } : '/bucket-list/item');
@@ -141,7 +141,7 @@ export default function BucketListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   failure: {
     marginTop: spacing.lg,
   },
@@ -185,4 +185,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.6,
   },
-});
+}));

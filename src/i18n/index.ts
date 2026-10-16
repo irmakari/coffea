@@ -22,4 +22,4 @@ export function t(key: TranslationKey, params?: Record<string, string | number>)
   );
 }
 
-export { formatCurrency, formatDate, formatNumber, locale, weekdayInitials } from './format';
+export { currencyLabel, currencySymbol, formatCurrency, formatDate, formatNumber, locale, weekdayInitials } from './format';

@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   RefreshControl,
   ScrollView,
-  StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -34,7 +34,7 @@ import { startLog } from "@/features/entries/logDraft";
 import { MonthCalendar } from "@/features/entries/MonthCalendar";
 import type { Entry } from "@/features/entries/types";
 import { formatDate, formatNumber, t } from "@/i18n";
-import { colors, contentColumn, sizes, spacing } from "@/theme";
+import { colors, contentColumn, sizes, spacing, themed } from "@/theme";
 
 function countLabel(count: number) {
   if (count === 0) return t("diary.count.none");
@@ -51,6 +51,24 @@ export default function DiaryScreen() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // Where the day's list starts, so picking a day can bring it into view.
+  const scrollRef = useRef<ScrollView>(null);
+  const listY = useRef(0);
+  const { height } = useWindowDimensions();
+  // The month fills the screen, so the day's coffees and its log button
+  // would sit out of sight below it. Brought up to the middle of the screen,
+  // with the last weeks still above to pick another day. After the frame
+  // that draws the day's list, since the page's height changes with it.
+  useEffect(() => {
+    if (selectedDay === null) return;
+    const frame = requestAnimationFrame(() =>
+      scrollRef.current?.scrollTo({
+        y: Math.max(listY.current - height * 0.45, 0),
+        animated: true,
+      }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [selectedDay, height]);
   const [view, setView] = useState<DiaryView>(readDiaryView);
   // Home's album card picks the view before it opens this tab.
   useFocusEffect(
@@ -151,6 +169,7 @@ export default function DiaryScreen() {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[contentColumn, styles.content]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -171,6 +190,14 @@ export default function DiaryScreen() {
               plain
             />
           ))}
+          <View style={styles.searchButton}>
+            <IconButton
+              plain
+              icon="search"
+              label={t("search.open")}
+              onPress={() => router.push("/search")}
+            />
+          </View>
         </View>
 
         {view === "album" ? (
@@ -246,7 +273,12 @@ export default function DiaryScreen() {
               />
             </View>
 
-            <View style={styles.list}>
+            <View
+              style={styles.list}
+              onLayout={(event) => {
+                listY.current = event.nativeEvent.layout.y;
+              }}
+            >
               <SectionHeader title={listTitle} />
               {shown.length > 0 ? (
                 <View>
@@ -281,7 +313,7 @@ export default function DiaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -293,8 +325,13 @@ const styles = StyleSheet.create({
   },
   views: {
     flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  // Search covers every month and the album alike, so it sits by the views.
+  searchButton: {
+    marginLeft: "auto",
   },
   albumIntro: {
     marginTop: spacing.sm,
@@ -341,4 +378,4 @@ const styles = StyleSheet.create({
   emptyFrame: {
     width: 148,
   },
-});
+}));

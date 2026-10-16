@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { colors, sizes, spacing } from '@/theme';
+import { colors, sizes, spacing, themed } from '@/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -75,7 +75,7 @@ export function SectionHeader({ title, large = false, action }: SectionHeaderPro
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   row: {
     minHeight: 56,
     flexDirection: 'row',
@@ -114,4 +114,4 @@ const styles = StyleSheet.create({
   largeTitle: {
     flexShrink: 1,
   },
-});
+}));

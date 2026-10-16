@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, EmptyState, LoadingState, ModalHeader, Screen, Text } from '@/components/ui';
@@ -8,7 +8,7 @@ import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { CARD_RATIO, ShareCard, shareTemplates, type ShareTemplate } from '@/features/share/ShareCard';
 import { shareCard } from '@/features/share/shareImage';
 import { t } from '@/i18n';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, themed } from '@/theme';
 
 export default function ShareCoffeeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -90,7 +90,7 @@ export default function ShareCoffeeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   preview: {
     flex: 1,
     alignItems: 'center',
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   cardShadow: {
     borderRadius: 2,
     backgroundColor: colors.background,
-    shadowColor: colors.text,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.14,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -117,4 +117,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     gap: spacing.sm,
   },
-});
+}));

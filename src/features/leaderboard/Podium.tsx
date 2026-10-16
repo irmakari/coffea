@@ -1,9 +1,12 @@
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Avatar, Text } from '@/components/ui';
+import { Avatar, Icon, Text } from '@/components/ui';
 import { personName } from '@/features/friends/friendsApi';
+import { shareInvite } from '@/features/friends/invite';
+import { useProfile } from '@/features/profile/ProfileProvider';
 import { formatNumber, t } from '@/i18n';
-import { fonts, radii, spacing } from '@/theme';
+import { fonts, radii, spacing, themed } from '@/theme';
 
 import { ink, Row } from './FriendsBoard';
 import type { Metric, Ranked } from './leaderboardApi';
@@ -39,12 +42,31 @@ function Step({ standing, metric, isMe, height }: { standing: Ranked; metric: Me
   );
 }
 
-// A step nobody stands on yet, so a small circle still reads as a podium.
-function EmptyStep({ height }: { height: number }) {
+// A step nobody stands on yet: an open seat that invites a friend to take
+// it, so a small circle still reads as a podium rather than a gap.
+function EmptyStep({ place, height }: { place: number; height: number }) {
+  const { profile } = useProfile();
+  const invite = () => {
+    if (profile.username) shareInvite(profile.username).catch(() => {});
+    else router.push('/friends/add');
+  };
   return (
-    <View style={styles.step}>
-      <View style={[styles.block, styles.blockEmpty, { height }]} />
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('friends.invite.action')}
+      onPress={invite}
+      style={({ pressed }) => [styles.step, pressed && styles.pressed]}
+    >
+      <View style={styles.seat}>
+        <Icon name="plus" size={20} color="boardMuted" />
+      </View>
+      <Text numberOfLines={1} style={[styles.name, styles.nameEmpty]}>
+        {t('leaderboard.invite')}
+      </Text>
+      <View style={[styles.block, styles.blockEmpty, { height }]}>
+        <Text style={[styles.place, { color: ink.muted }]}>{place}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -58,9 +80,9 @@ export function Podium({ ranked, metric, userId }: { ranked: Ranked[]; metric: M
   return (
     <View style={styles.card}>
       <View style={styles.podium}>
-        {second ? <Step standing={second} metric={metric} isMe={second.id === userId} height={56} /> : <EmptyStep height={56} />}
+        {second ? <Step standing={second} metric={metric} isMe={second.id === userId} height={56} /> : <EmptyStep place={2} height={56} />}
         {first ? <Step standing={first} metric={metric} isMe={first.id === userId} height={84} /> : null}
-        {third ? <Step standing={third} metric={metric} isMe={third.id === userId} height={40} /> : <EmptyStep height={40} />}
+        {third ? <Step standing={third} metric={metric} isMe={third.id === userId} height={40} /> : <EmptyStep place={3} height={40} />}
       </View>
       {rest.length > 0 ? (
         <View style={styles.rest}>
@@ -73,7 +95,7 @@ export function Podium({ ranked, metric, userId }: { ranked: Ranked[]; metric: M
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
@@ -131,6 +153,23 @@ const styles = StyleSheet.create({
   blockEmpty: {
     backgroundColor: ink.track,
   },
+  // The size of a second-place avatar in its ring, drawn as an open seat.
+  seat: {
+    width: 62,
+    height: 62,
+    borderRadius: radii.pill,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: ink.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameEmpty: {
+    color: ink.muted,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
   blockFirst: {
     backgroundColor: ink.accent,
   },
@@ -145,4 +184,4 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: ink.track,
   },
-});
+}));

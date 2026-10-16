@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CupMark, SectionHeader, Text } from '@/components/ui';
 import { t } from '@/i18n';
-import { colors, contentColumn, radii, spacing } from '@/theme';
+import { colors, contentColumn, radii, spacing, themed } from '@/theme';
 
 import { moreCoffees } from './moreCoffees';
 import { coffeeTypes } from './types';
@@ -161,7 +161,7 @@ function Sheet({ onPick, onClose }: Omit<QuickLogPickerProps, 'visible'>) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   backdrop: {
     backgroundColor: colors.accent,
     opacity: 0.35,
@@ -218,4 +218,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

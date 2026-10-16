@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
+import { RefreshControl, ScrollView, View, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { colors, contentColumn, spacing } from '@/theme';
+import { colors, contentColumn, spacing, themed } from '@/theme';
 
 type ScreenProps = {
   children: ReactNode;
@@ -59,7 +59,7 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -75,4 +75,4 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: spacing.xxxl,
   },
-});
+}));

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   Button,
@@ -14,16 +14,15 @@ import {
   SectionHeader,
   Text,
 } from '@/components/ui';
-import { confirm, showActions } from '@/features/friends/actions';
+import { openFriendMenu } from '@/features/friends/friendMenu';
 import { personName, type Connection, type Person } from '@/features/friends/friendsApi';
 import { useFriends } from '@/features/friends/FriendsProvider';
 import { shareInvite } from '@/features/friends/invite';
 import { PersonRow, RowButton } from '@/features/friends/PersonRow';
-import { askToReport } from '@/features/friends/report';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
 import { successFeedback } from '@/lib/haptics';
-import { colors, sizes, spacing } from '@/theme';
+import { spacing, themed } from '@/theme';
 
 export default function FriendsScreen() {
   const { profile } = useProfile();
@@ -55,34 +54,13 @@ export default function FriendsScreen() {
       await respond(person, false);
     });
 
-  const askToBlock = (person: Person) =>
-    confirm(
-      t('friends.block.title', { name: personName(person) }),
-      t('friends.block.body'),
-      t('friends.block.confirm'),
-      () => run(person, () => block(person)),
-    );
-
   const openMenu = (person: Person) =>
-    showActions(personName(person), [
-      {
-        label: t('friends.menu.remove'),
-        onPress: () =>
-          confirm(t('friends.remove.title', { name: personName(person) }), undefined, t('friends.remove.confirm'), () =>
-            run(person, () => remove(person)),
-          ),
-      },
-      {
-        label: t('report.person'),
-        onPress: () =>
-          askToReport({
-            person: { id: person.id, name: personName(person) },
-            onBlock: () => run(person, () => block(person)),
-            onError: () => setFailure(t('friends.updateError')),
-          }),
-      },
-      { label: t('friends.menu.block'), destructive: true, onPress: () => askToBlock(person) },
-    ]);
+    openFriendMenu(person, {
+      remove,
+      block,
+      run: (action) => run(person, action),
+      onError: () => setFailure(t('friends.updateError')),
+    });
 
   const section = (title: string, people: Connection[], trailing: (person: Connection) => ReactNode) =>
     people.length > 0 ? (
@@ -90,11 +68,18 @@ export default function FriendsScreen() {
         <SectionHeader title={title} />
         <View style={styles.rows}>
           {people.map((person) => (
-            <PersonRow key={person.id} person={person} trailing={trailing(person)} />
+            <PersonRow
+              key={person.id}
+              person={person}
+              trailing={trailing(person)}
+              onPress={person.relation === 'friend' ? () => openFriend(person.id) : undefined}
+            />
           ))}
         </View>
       </View>
     ) : null;
+
+  const openFriend = (id: string) => router.push({ pathname: '/friends/[id]', params: { id } });
 
   const nobody = friends.length + incoming.length + outgoing.length === 0;
 
@@ -192,7 +177,7 @@ export default function FriendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   invite: {
     marginTop: spacing.lg,
   },
@@ -209,13 +194,10 @@ const styles = StyleSheet.create({
   section: {
     marginTop: spacing.xxl,
   },
-  rows: {
-    borderTopWidth: sizes.hairline,
-    borderTopColor: colors.border,
-  },
+  // Straight under their heading and split by the rows' own hairlines, like
+  // the profile tab's lists, so no empty band of lines opens between groups.
+  rows: {},
   footer: {
-    marginTop: spacing.xxxl,
-    borderTopWidth: sizes.hairline,
-    borderTopColor: colors.border,
+    marginTop: spacing.xxl,
   },
-});
+}));

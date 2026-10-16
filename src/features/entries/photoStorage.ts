@@ -96,15 +96,32 @@ export async function removeAllPhotos(userId: string): Promise<void> {
   }
 }
 
+// Links already made, by path, until an hour before they run out. Paths are
+// never reused for another picture, so a link stays right for its life, and
+// a screen opened again shows its photos without asking the server first.
+const LINK_REUSE_MS = (LINK_LIFETIME_SECONDS - 60 * 60) * 1000;
+const made = new Map<string, { url: string; until: number }>();
+
 // The bucket is private, so photos are shown through short-lived links.
 export async function createPhotoLinks(paths: string[]): Promise<Map<string, string>> {
   const links = new Map<string, string>();
-  if (paths.length === 0) return links;
+  const now = Date.now();
+  const missing = new Set<string>();
+  for (const path of paths) {
+    const kept = made.get(path);
+    if (kept && kept.until > now) links.set(path, kept.url);
+    else missing.add(path);
+  }
+  if (missing.size === 0) return links;
 
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, LINK_LIFETIME_SECONDS);
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrls([...missing], LINK_LIFETIME_SECONDS);
   if (error) throw error;
   for (const item of data) {
-    if (item.path && item.signedUrl) links.set(item.path, item.signedUrl);
+    if (!item.path || !item.signedUrl) continue;
+    links.set(item.path, item.signedUrl);
+    made.set(item.path, { url: item.signedUrl, until: now + LINK_REUSE_MS });
   }
   return links;
 }

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed } from '@/theme';
 
 import { Text } from './Text';
 
@@ -11,16 +11,21 @@ type ChipProps = {
   // Unselected, just the word on the page: for a switch between views,
   // where the selected one already shows what can be tapped.
   plain?: boolean;
+  // For a second, rarer action on the same chip, such as removing it.
+  onLongPress?: () => void;
+  accessibilityHint?: string;
 };
 
 // An unselected chip is soft white, like every other control on the warm
 // page. Its hairline alone is too faint there to say it can be tapped.
-export function Chip({ label, selected, onPress, plain = false }: ChipProps) {
+export function Chip({ label, selected, onPress, plain = false, onLongPress, accessibilityHint }: ChipProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      accessibilityHint={accessibilityHint}
       onPress={onPress}
+      onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.chip,
         plain && styles.plain,
@@ -35,14 +40,14 @@ export function Chip({ label, selected, onPress, plain = false }: ChipProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   chip: {
     minHeight: sizes.chip,
     paddingHorizontal: spacing.lg,
     borderRadius: radii.pill,
-    borderWidth: sizes.hairline,
+    // An outline on the page until picked, like the outlined cards.
+    borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -63,4 +68,4 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
   },
-});
+}));

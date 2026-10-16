@@ -1,10 +1,10 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { Icon, Text } from '@/components/ui';
 import { formatDate, t } from '@/i18n';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, isDarkTheme, radii, sizes, spacing, themed } from '@/theme';
 
 type DateFieldProps = {
   label: string;
@@ -138,7 +138,7 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
             display="inline"
             maximumDate={today}
             accentColor={colors.accent}
-            themeVariant="light"
+            themeVariant={isDarkTheme() ? "dark" : "light"}
             onValueChange={(_event, day) => pickDay(day)}
           />
         </View>
@@ -150,7 +150,7 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
             mode="time"
             display="spinner"
             textColor={colors.text}
-            themeVariant="light"
+            themeVariant={isDarkTheme() ? "dark" : "light"}
             onValueChange={(_event, time) => pickTime(time)}
           />
         </View>
@@ -159,7 +159,7 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   field: {
     gap: spacing.md,
   },
@@ -208,4 +208,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     overflow: 'hidden',
   },
-});
+}));

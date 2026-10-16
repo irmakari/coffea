@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Button, EmptyState, LoadingState, PageHeader, Screen, Text } from '@/components/ui';
 import { confirm } from '@/features/friends/actions';
 import { fetchBlocked, personName, unblockUser, type Person } from '@/features/friends/friendsApi';
 import { PersonRow, RowButton } from '@/features/friends/PersonRow';
 import { t } from '@/i18n';
-import { colors, sizes, spacing } from '@/theme';
+import { colors, sizes, spacing, themed } from '@/theme';
 
 export default function BlockedScreen() {
   const [people, setPeople] = useState<Person[]>([]);
@@ -103,7 +103,7 @@ export default function BlockedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   failure: {
     marginTop: spacing.lg,
   },
@@ -112,4 +112,4 @@ const styles = StyleSheet.create({
     borderTopWidth: sizes.hairline,
     borderTopColor: colors.border,
   },
-});
+}));

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { colors, photoRatio, radii } from '@/theme';
+import { colors, photoRatio, radii, themed } from '@/theme';
 
 import { CupMark } from './CupMark';
 
@@ -50,7 +50,7 @@ export function CoffeePhoto({ uri, cacheKey, ratio = 'portrait', drink, accessib
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   frame: {
     // Width leads and the crop sets the height, whatever the parent's layout.
     width: '100%',
@@ -63,4 +63,4 @@ const styles = StyleSheet.create({
   illustrated: {
     backgroundColor: colors.highlight,
   },
-});
+}));

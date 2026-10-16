@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackButton, Card, Icon, SectionHeader, Text } from '@/components/ui';
@@ -7,7 +7,7 @@ import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryRow } from '@/features/entries/EntryCard';
 import { searchEntries } from '@/features/entries/search';
 import { formatNumber, t } from '@/i18n';
-import { colors, contentColumn, radii, sizes, spacing, typography } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing, themed, typography } from '@/theme';
 
 // Enough to scan; past this the answer is another word, not more scrolling.
 const SHOWN = 40;
@@ -88,7 +88,7 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -131,4 +131,4 @@ const styles = StyleSheet.create({
   more: {
     marginTop: spacing.md,
   },
-});
+}));

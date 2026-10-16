@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 
@@ -31,7 +31,7 @@ export function IconButton({ icon, label, filled, plain = false, onPress }: Icon
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   button: {
     width: sizes.chip,
     height: sizes.chip,
@@ -48,4 +48,4 @@ const styles = StyleSheet.create({
   plainPressed: {
     opacity: 0.5,
   },
-});
+}));
