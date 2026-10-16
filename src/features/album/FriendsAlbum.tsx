@@ -4,7 +4,7 @@ import { Avatar, CupMark, SectionHeader, Text } from '@/components/ui';
 import { isCoffeeType } from '@/features/entries/types';
 import { personName } from '@/features/friends/friendsApi';
 import { t } from '@/i18n';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, fonts, sizes, spacing } from '@/theme';
 
 import type { Activity } from './albumFriendsApi';
 
@@ -29,7 +29,7 @@ function when(iso: string, now = new Date()) {
 export function ActivityList({ items }: { items: Activity[] }) {
   return (
     <View>
-      <SectionHeader title={t('activity.title')} />
+      <SectionHeader large title={t('activity.title')} />
       {items.length === 0 ? (
         <Text color="textSecondary">{t('activity.empty')}</Text>
       ) : (
@@ -47,13 +47,17 @@ export function ActivityList({ items }: { items: Activity[] }) {
               />
               <View style={styles.itemText}>
                 <Text numberOfLines={2}>
-                  {t('activity.collected', { name: personName(item.person), coffee: coffeeName(item.coffee) })}
+                  <Text style={styles.strong}>{personName(item.person)}</Text>
+                  {t('activity.collectedJoin')}
+                  <Text style={styles.strong}>{coffeeName(item.coffee)}</Text>
                 </Text>
                 <Text variant="caption" color="textMuted">
                   {when(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
                 </Text>
               </View>
-              <CupMark drink={item.coffee} size={40} />
+              <View style={styles.cup}>
+                <CupMark drink={item.coffee} size={46} />
+              </View>
             </View>
           ))}
         </View>
@@ -63,11 +67,8 @@ export function ActivityList({ items }: { items: Activity[] }) {
 }
 
 const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.frame,
-    backgroundColor: colors.surface,
-  },
+  // Straight on the page, split by hairlines, like the home tab's list.
+  list: {},
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -78,6 +79,16 @@ const styles = StyleSheet.create({
   },
   lastItem: {
     borderBottomWidth: 0,
+  },
+  // The drink alone, straight on the page.
+  cup: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  strong: {
+    fontFamily: fonts.sansStrong,
   },
   itemText: {
     flex: 1,

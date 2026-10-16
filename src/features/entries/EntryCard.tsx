@@ -10,6 +10,9 @@ import { typeAndCafe, typeLabel } from './display';
 import { useSticker } from './sticker';
 import type { Entry } from './types';
 
+// Wide enough that a shelf of them shows two and the edge of a third.
+export const TILE_WIDTH = 150;
+
 function openEntry(entry: Entry) {
   router.push({ pathname: '/entry/[id]', params: { id: entry.id } });
 }
@@ -83,13 +86,13 @@ export function EntryCard({ entry }: { entry: Entry }) {
       {entry.photoUrl || entry.type ? <Visual entry={entry} /> : null}
       <View style={styles.cardText}>
         <View style={styles.titleRow}>
-          <Text variant="heading" numberOfLines={2} style={styles.title}>
+          <Text variant="subheading" numberOfLines={2} style={styles.title}>
             {entry.name}
           </Text>
-          {entry.isFavorite ? <Icon name="heart" size={16} filled color="textSecondary" /> : null}
+          {entry.isFavorite ? <Icon name="heart" size={14} filled color="textSecondary" /> : null}
         </View>
         {detail ? (
-          <Text variant="small" color="textSecondary" numberOfLines={2}>
+          <Text variant="small" color="textSecondary" numberOfLines={1}>
             {detail}
           </Text>
         ) : null}
@@ -100,6 +103,7 @@ export function EntryCard({ entry }: { entry: Entry }) {
           {entry.rating ? <Rating value={entry.rating} /> : null}
         </View>
       </View>
+      <Icon name="chevronRight" size={16} color="textMuted" />
     </Pressable>
   );
 }
@@ -117,7 +121,7 @@ export function EntryTile({ entry }: { entry: Entry }) {
         <CoffeePhoto uri={entry.photoUrl} cacheKey={entry.photoPath} drink={entry.type} ratio="square" style={styles.tilePhoto} />
         {entry.isFavorite ? (
           <View style={styles.tileHeart}>
-            <Icon name="heart" size={13} filled />
+            <Icon name="heart" size={12} filled />
           </View>
         ) : null}
       </View>
@@ -164,18 +168,22 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
+  // iOS's continuous corners, on a 16 point inset like a grouped list.
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
     padding: spacing.md,
-    borderRadius: radii.frame,
+    paddingRight: spacing.lg,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     backgroundColor: colors.surface,
   },
   cardVisual: {
-    width: 116,
+    width: 88,
     aspectRatio: 1,
-    borderRadius: radii.control,
+    borderRadius: 14,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   stickerBackdrop: {
@@ -188,8 +196,7 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    gap: spacing.xs,
-    paddingRight: spacing.sm,
+    gap: 3,
   },
   titleRow: {
     flexDirection: 'row',
@@ -209,32 +216,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
   },
+  // Like an album in Music: the picture straight on the page, its words below.
   tile: {
-    width: 148,
-    padding: spacing.sm,
-    borderRadius: radii.frame,
-    backgroundColor: colors.surface,
+    width: TILE_WIDTH,
   },
   tilePhoto: {
-    borderRadius: radii.frame - spacing.sm,
-    backgroundColor: colors.background,
+    borderRadius: 18,
+    borderCurve: 'continuous',
   },
   tileHeart: {
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
-    width: 26,
-    height: 26,
+    width: 24,
+    height: 24,
     borderRadius: radii.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255, 252, 248, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Set in from the picture's rounded corner, so the words sit under it.
   tileText: {
-    paddingHorizontal: spacing.xs,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    gap: 2,
+    paddingHorizontal: spacing.sm,
+    gap: 1,
   },
   row: {
     flexDirection: 'row',

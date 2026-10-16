@@ -24,7 +24,12 @@ import {
 import { buildAlbum, collectedCount } from "@/features/album/album";
 import { saveDiaryView } from "@/features/album/diaryView";
 import { useEntries } from "@/features/entries/EntriesProvider";
-import { EntryCard, EntryRow, EntryTile } from "@/features/entries/EntryCard";
+import {
+  EntryCard,
+  EntryRow,
+  EntryTile,
+  TILE_WIDTH,
+} from "@/features/entries/EntryCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
 import { formatDate, formatNumber, t, type TranslationKey } from "@/i18n";
 import { colors, contentColumn, radii, spacing } from "@/theme";
@@ -205,7 +210,14 @@ export default function HomeScreen() {
         ) : (
           <View style={[contentColumn, styles.body]}>
             <View>
-              <SectionHeader title={t("home.latest")} />
+              <SectionHeader
+                large
+                title={t("home.latest")}
+                action={{
+                  label: t("home.seeAll"),
+                  onPress: () => router.navigate("/diary"),
+                }}
+              />
               <EntryCard entry={latest} />
             </View>
 
@@ -213,10 +225,23 @@ export default function HomeScreen() {
 
             {favorites.length > 0 ? (
               <View>
-                <SectionHeader title={t("home.favorites")} />
+                <SectionHeader
+                  large
+                  title={t("home.favorites")}
+                  action={{
+                    label: t("home.seeAll"),
+                    onPress: () =>
+                      router.push({
+                        pathname: "/collection",
+                        params: { kind: "favorites" },
+                      }),
+                  }}
+                />
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
+                  snapToInterval={TILE_WIDTH + spacing.md}
+                  decelerationRate="fast"
                   style={styles.shelf}
                   contentContainerStyle={styles.shelfContent}
                 >
@@ -229,8 +254,9 @@ export default function HomeScreen() {
 
             {earlier.length > 0 ? (
               <View>
-                <SectionHeader title={t("home.earlier")} />
-                <Card style={styles.listCard}>
+                <SectionHeader large title={t("home.earlier")} />
+                {/* Straight on the page, split by hairlines, like a plain iOS list. */}
+                <View>
                   {earlier.map((entry, index) => (
                     <EntryRow
                       key={entry.id}
@@ -238,7 +264,7 @@ export default function HomeScreen() {
                       last={index === earlier.length - 1}
                     />
                   ))}
-                </Card>
+                </View>
                 {rest.length > EARLIER_COUNT ? (
                   <Button
                     variant="quiet"
@@ -333,12 +359,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     gap: spacing.md,
   },
-  listCard: {
-    paddingVertical: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
   albumCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,6 +379,9 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: radii.pill,
     backgroundColor: colors.accent,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   openDiary: {
     marginTop: spacing.xs,

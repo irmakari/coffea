@@ -1,10 +1,22 @@
 import { supabase } from '@/lib/supabase';
 
 import { createPhotoLinks, finishUpload, isLocalPhoto, removeCoffeePhoto, type StoredPhoto } from './photoStorage';
-import { parsePrice, recognizeType, takesMilk, type Entry, type EntryDraft } from './types';
+import {
+  asShots,
+  asSize,
+  asTemperature,
+  asVenue,
+  parsePrice,
+  recognizeType,
+  takesMilk,
+  takesShots,
+  takesSize,
+  type Entry,
+  type EntryDraft,
+} from './types';
 
 const COLUMNS =
-  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, consumed_at, price, currency, rating, notes, is_favorite';
+  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, consumed_at, price, currency, rating, notes, is_favorite, size, shots, temperature, venue';
 
 type EntryRow = {
   id: string;
@@ -20,6 +32,10 @@ type EntryRow = {
   rating: number | null;
   notes: string | null;
   is_favorite: boolean;
+  size: string | null;
+  shots: number | null;
+  temperature: string | null;
+  venue: string | null;
 };
 
 function toEntry(row: EntryRow, photoUrl: string | null): Entry {
@@ -39,6 +55,10 @@ function toEntry(row: EntryRow, photoUrl: string | null): Entry {
     rating: row.rating,
     notes: row.notes,
     isFavorite: row.is_favorite,
+    size: asSize(row.size),
+    shots: asShots(row.shots),
+    temperature: asTemperature(row.temperature),
+    venue: asVenue(row.venue),
   };
 }
 
@@ -64,6 +84,11 @@ function fieldsFromDraft(draft: EntryDraft) {
     // A currency is only meaningful beside a price.
     currency: price === null ? null : draft.currency,
     notes: blankToNull(draft.notes),
+    // As with milk, a choice that no longer applies to the type is dropped.
+    size: takesSize(draft.type) ? draft.size : null,
+    shots: takesShots(draft.type) ? draft.shots : null,
+    temperature: draft.temperature,
+    venue: draft.venue,
     // Sharing with friends was taken out. Saving a coffee also takes back
     // one that was shared before.
     is_shared: false,

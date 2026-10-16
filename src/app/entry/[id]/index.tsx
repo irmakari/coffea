@@ -1,46 +1,134 @@
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   BackButton,
   Button,
-  Card,
   CoffeePhoto,
+  CupMark,
   EmptyState,
   Icon,
-  IconButton,
+  type IconName,
   LoadingState,
   Screen,
   Text,
 } from '@/components/ui';
+import { albumSlots, slotNumber } from '@/features/album/album';
 import { typeLabel } from '@/features/entries/display';
 import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
-import { isMilkType, MAX_RATING } from '@/features/entries/types';
-import { formatCurrency, formatDate, t } from '@/i18n';
+import { useSticker } from '@/features/entries/sticker';
+import { isMilkType, MAX_RATING, type Entry } from '@/features/entries/types';
+import { showActions } from '@/features/friends/actions';
+import { caffeineOf } from '@/features/stats/caffeine';
+import { formatCurrency, formatDate, formatNumber, t } from '@/i18n';
 import { tapFeedback } from '@/lib/haptics';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing } from '@/theme';
 
-// One labelled detail of the coffee. Two sit side by side; an odd one out
-// takes the whole row.
-function Fact({ label, children }: { label: string; children: ReactNode }) {
+const VISUAL = 156;
+// How far the coffee reaches down over the white sheet.
+const OVERHANG = 44;
+
+// A bare icon on the tan header, with a full-size touch area.
+function HeaderButton({
+  icon,
+  label,
+  filled,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  filled?: boolean;
+  onPress: () => void;
+}) {
   return (
-    <Card style={styles.fact}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={spacing.xs}
+      style={({ pressed }) => [styles.round, pressed && styles.pressed]}
+    >
+      <Icon name={icon} size={22} filled={filled} />
+    </Pressable>
+  );
+}
+
+// The coffee on the right of the header: its sticker standing free, else
+// the photo in a small frame, else the drawing of the drink.
+function Visual({ entry }: { entry: Entry }) {
+  const sticker = useSticker(entry.photoUrl, entry.photoPath);
+  if (sticker) {
+    return <Image source={{ uri: sticker }} contentFit="contain" transition={250} style={styles.sticker} />;
+  }
+  if (entry.photoUrl) {
+    return (
+      <CoffeePhoto
+        uri={entry.photoUrl}
+        cacheKey={entry.photoPath}
+        ratio="square"
+        accessibilityLabel={entry.name}
+        style={styles.photo}
+      />
+    );
+  }
+  return (
+    <View style={styles.drawing}>
+      <CupMark drink={entry.type} size={VISUAL - spacing.lg} />
+    </View>
+  );
+}
+
+// One part of the sheet, set off from the next by a hairline.
+function Section({ label, children, last = false }: { label: string; children: ReactNode; last?: boolean }) {
+  return (
+    <View style={[styles.section, last && styles.sectionLast]}>
       <Text variant="label" color="textSecondary">
         {label}
       </Text>
       {children}
-    </Card>
+    </View>
   );
+}
+
+// "1st", "2nd", "3rd", "4th"... for the album line.
+function ordinal(count: number) {
+  const tens = count % 100;
+  if (tens >= 11 && tens <= 13) return t('entry.album.nth', { count });
+  switch (count % 10) {
+    case 1:
+      return t('entry.album.first', { count });
+    case 2:
+      return t('entry.album.second', { count });
+    case 3:
+      return t('entry.album.third', { count });
+    default:
+      return t('entry.album.nth', { count });
+  }
 }
 
 export default function EntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const entry = useEntry(id);
-  const { status, remove, toggleFavorite } = useEntries();
+  const { entries, status, remove, toggleFavorite } = useEntries();
+  const insets = useSafeAreaInsets();
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  const [favoriteFailed, setFavoriteFailed] = useState(false);
+
+  // Where the coffee sits in the album, and how many times it was had up to
+  // and including this one.
+  const album = useMemo(() => {
+    if (!entry?.type) return null;
+    const key = entry.type.trim().toLowerCase();
+    const slot = albumSlots().find((candidate) => candidate.value.toLowerCase() === key);
+    if (!slot) return null;
+    const times = entries.filter(
+      (other) => other.type?.trim().toLowerCase() === key && other.consumedAt <= entry.consumedAt,
+    ).length;
+    return { number: slot.number, times };
+  }, [entries, entry]);
 
   if (!entry) {
     return (
@@ -52,21 +140,36 @@ export default function EntryScreen() {
   }
 
   const type = typeLabel(entry);
-  const price = entry.price !== null && entry.currency ? formatCurrency(entry.price, entry.currency) : null;
   const milk = isMilkType(entry.milk) ? t(`milkTypes.${entry.milk}`) : entry.milk;
-  const hasFacts = !!type || !!milk || !!entry.cafe || !!entry.rating || !!price;
-  // Offered only while none of the details are in. With some of them there
-  // the page is no longer bare, and Edit above does the same.
+  // The type is left out when it is all the name says ("Turkish Coffee").
+  const sameAsName = !!type && type.trim().toLowerCase() === entry.name.trim().toLowerCase();
+  const kind = [
+    sameAsName ? null : type,
+    milk,
+    entry.size ? t(`entry.size.${entry.size}`) : null,
+    entry.temperature ? t(`entry.temperature.${entry.temperature}`) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const where = [entry.venue ? t(`entry.venue.${entry.venue}`) : null, entry.cafe].filter(Boolean).join(' · ');
+  const caffeine = [
+    t('entry.caffeine.value', { mg: formatNumber(caffeineOf(entry)) }),
+    entry.shots ? t(entry.shots === 1 ? 'entry.shots.one' : 'entry.shots.other', { count: entry.shots }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const price = entry.price !== null && entry.currency ? formatCurrency(entry.price, entry.currency) : null;
   const bare = !entry.cafe && !entry.rating && !price && !entry.notes;
 
   const favorite = () => {
-    setFavoriteFailed(false);
+    setFailure(null);
     tapFeedback();
     // The provider puts the heart back if the save fails; this says why.
-    toggleFavorite(entry).catch(() => setFavoriteFailed(true));
+    toggleFavorite(entry).catch(() => setFailure(t('entry.favorite.error')));
   };
 
   const edit = () => router.push({ pathname: '/entry/[id]/edit', params: { id: entry.id } });
+  const share = () => router.push({ pathname: '/entry/[id]/share', params: { id: entry.id } });
 
   const confirmDelete = () => {
     Alert.alert(t('entry.delete.title'), t('entry.delete.body'), [
@@ -89,218 +192,271 @@ export default function EntryScreen() {
     ]);
   };
 
-  return (
-    <Screen scroll edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <BackButton />
-        <View style={styles.headerActions}>
-          <IconButton
-            plain
-            icon="share"
-            label={t('share.open')}
-            onPress={() => router.push({ pathname: '/entry/[id]/share', params: { id: entry.id } })}
-          />
-          <IconButton
-            plain
-            icon="heart"
-            filled={entry.isFavorite}
-            label={t(entry.isFavorite ? 'entry.favorite.remove' : 'entry.favorite.add')}
-            onPress={favorite}
-          />
-          <Pressable
-            accessibilityRole="button"
-            onPress={edit}
-            hitSlop={spacing.sm}
-            style={({ pressed }) => [styles.edit, pressed && styles.editPressed]}
-          >
-            <Text variant="bodyStrong">{t('entry.edit')}</Text>
-          </Pressable>
-        </View>
-      </View>
+  const more = () =>
+    showActions(entry.name, [{ label: t('entry.delete.action'), destructive: true, onPress: confirmDelete }]);
 
-      {favoriteFailed ? (
-        <Text variant="small" color="danger" align="right" accessibilityLiveRegion="polite" style={styles.favoriteFailed}>
-          {t('entry.favorite.error')}
-        </Text>
-      ) : null}
-
-      {entry.photoUrl || entry.type ? (
-        <CoffeePhoto
-          uri={entry.photoUrl}
-          cacheKey={entry.photoPath}
-          drink={entry.type}
-          // A drawing needs less room than a photograph, and the details
-          // below should not be pushed off the first screen.
-          ratio={entry.photoUrl ? 'square' : 'landscape'}
-          accessibilityLabel={entry.name}
-          style={styles.photo}
-        />
-      ) : null}
-
-      <View style={styles.heading}>
-        <Text variant="display" accessibilityRole="header">
-          {entry.name}
-        </Text>
-        <Text color="textSecondary">
+  // Each part of the sheet that has something to say, in order.
+  const sections: { key: string; label: string; body: ReactNode }[] = [
+    {
+      key: 'when',
+      label: t('entry.date.label'),
+      body: (
+        <Text variant="subheading">
           {formatDate(entry.consumedAt, 'day')} · {formatDate(entry.consumedAt, 'time')}
         </Text>
-      </View>
-
-      {hasFacts ? (
-        <View style={styles.facts}>
-          {type ? (
-            <Fact label={t('entry.type.label')}>
-              <Text variant="subheading" numberOfLines={2}>
-                {type}
-              </Text>
-            </Fact>
-          ) : null}
-          {milk ? (
-            <Fact label={t('entry.milk.label')}>
-              <Text variant="subheading" numberOfLines={1}>
-                {milk}
-              </Text>
-            </Fact>
-          ) : null}
-          {entry.cafe ? (
-            <Fact label={t('entry.cafe.label')}>
-              <Text variant="subheading" numberOfLines={2}>
-                {entry.cafe}
-              </Text>
-            </Fact>
-          ) : null}
-          {entry.rating ? (
-            <Fact label={t('entry.rating.label')}>
-              <View style={styles.rating} accessibilityLabel={t('entry.rating.value', { count: entry.rating })}>
-                {Array.from({ length: MAX_RATING }, (_, index) => {
-                  const active = index < (entry.rating ?? 0);
-                  return (
-                    <Icon
-                      key={index}
-                      name="star"
-                      size={18}
-                      filled={active}
-                      strokeWidth={1.25}
-                      color={active ? 'text' : 'placeholder'}
-                    />
-                  );
-                })}
-              </View>
-            </Fact>
-          ) : null}
-          {price ? (
-            <Fact label={t('entry.price.label')}>
-              <Text variant="subheading" numberOfLines={1}>
-                {price}
-              </Text>
-            </Fact>
-          ) : null}
+      ),
+    },
+  ];
+  if (where) {
+    sections.push({ key: 'where', label: t('entry.venue.label'), body: <Text variant="subheading">{where}</Text> });
+  }
+  sections.push({ key: 'caffeine', label: t('entry.caffeine.label'), body: <Text variant="subheading">{caffeine}</Text> });
+  if (entry.rating) {
+    sections.push({
+      key: 'rating',
+      label: t('entry.rating.label'),
+      body: (
+        <View style={styles.rating} accessibilityLabel={t('entry.rating.value', { count: entry.rating })}>
+          {Array.from({ length: MAX_RATING }, (_, index) => {
+            const active = index < (entry.rating ?? 0);
+            return (
+              <Icon
+                key={index}
+                name="star"
+                size={20}
+                filled={active}
+                strokeWidth={1.25}
+                color={active ? 'text' : 'placeholder'}
+              />
+            );
+          })}
         </View>
-      ) : null}
+      ),
+    });
+  }
+  if (entry.notes) {
+    sections.push({ key: 'notes', label: t('entry.notes.label'), body: <Text>{entry.notes}</Text> });
+  }
+  if (album) {
+    sections.push({
+      key: 'album',
+      label: t('entry.album.label'),
+      body: (
+        <Text variant="subheading">
+          {slotNumber(album.number)} · {ordinal(album.times)}
+        </Text>
+      ),
+    });
+  }
 
-      {entry.notes ? (
-        <Card style={styles.notes}>
-          <Text variant="label" color="textSecondary">
-            {t('entry.notes.label')}
-          </Text>
-          <Text>{entry.notes}</Text>
-        </Card>
-      ) : null}
+  return (
+    <View style={styles.root}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+        showsVerticalScrollIndicator={false}
+        // The tan header runs up behind the status bar.
+        contentInsetAdjustmentBehavior="never"
+      >
+        <View style={[styles.hero, { paddingTop: insets.top + spacing.sm }]}>
+          <View style={[contentColumn, styles.heroInner]}>
+            <View style={styles.topBar}>
+              <HeaderButton icon="chevronLeft" label={t('common.back')} onPress={() => router.back()} />
+              <View style={styles.topActions}>
+                <HeaderButton
+                  icon="heart"
+                  filled={entry.isFavorite}
+                  label={t(entry.isFavorite ? 'entry.favorite.remove' : 'entry.favorite.add')}
+                  onPress={favorite}
+                />
+                <HeaderButton icon="more" label={t('entry.moreActions')} onPress={more} />
+              </View>
+            </View>
 
-      {bare ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={edit}
-          style={({ pressed }) => [styles.more, pressed && styles.morePressed]}
-        >
-          <Text variant="bodyStrong">{t('entry.details.add')}</Text>
-          <Icon name="plus" size={20} color="textSecondary" />
-        </Pressable>
-      ) : null}
+            <View style={styles.heroBody}>
+              <View style={styles.heroText}>
+                <Text variant="display" accessibilityRole="header" numberOfLines={3}>
+                  {entry.name}
+                </Text>
+                {kind ? <Text color="accentPressed">{kind}</Text> : null}
+                {price ? (
+                  <Text variant="heading" style={styles.price}>
+                    {price}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.visual}>
+                {entry.photoUrl || entry.type ? <Visual entry={entry} /> : null}
+              </View>
+            </View>
+          </View>
+        </View>
 
-      <View style={styles.footer}>
-        {failure ? (
-          <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
-            {failure}
-          </Text>
-        ) : null}
-        <Button variant="quiet" label={t('entry.delete.action')} loading={deleting} onPress={confirmDelete} />
+        <View style={styles.sheet}>
+          <View style={[contentColumn, styles.sheetInner]}>
+            {sections.map((section, index) => (
+              <Section key={section.key} label={section.label} last={index === sections.length - 1}>
+                {section.body}
+              </Section>
+            ))}
+
+            {bare ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={edit}
+                style={({ pressed }) => [styles.addMore, pressed && styles.pressed]}
+              >
+                <Text variant="bodyStrong">{t('entry.details.add')}</Text>
+                <Icon name="plus" size={20} color="textSecondary" />
+              </Pressable>
+            ) : null}
+
+            {failure ? (
+              <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite" style={styles.failure}>
+                {failure}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View style={[contentColumn, styles.barInner]}>
+          <Button variant="secondary" label={t('entry.edit')} onPress={edit} style={styles.barButton} />
+          <Button label={t('share.action')} loading={deleting} onPress={share} style={styles.barButton} />
+        </View>
       </View>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  root: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  hero: {
+    backgroundColor: colors.highlight,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.xl,
+  },
+  heroInner: {
+    gap: spacing.lg,
+  },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerActions: {
+  topActions: {
     flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  round: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  editPressed: {
-    opacity: 0.5,
-  },
-  // The word ends on the page's edge, in line with the photo below.
-  edit: {
-    height: sizes.chip,
-    paddingLeft: spacing.sm,
     justifyContent: 'center',
   },
-  favoriteFailed: {
+  pressed: {
+    opacity: 0.6,
+  },
+  heroBody: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.md,
+  },
+  heroText: {
+    flex: 1,
+    gap: spacing.xs,
+    paddingBottom: OVERHANG,
+  },
+  price: {
     marginTop: spacing.sm,
   },
+  // Sits on the header and reaches down over the top of the sheet.
+  visual: {
+    width: VISUAL,
+    height: VISUAL,
+    marginBottom: -OVERHANG - spacing.xl,
+    zIndex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sticker: {
+    width: VISUAL,
+    height: VISUAL,
+  },
   photo: {
-    marginTop: spacing.xl,
+    width: VISUAL - spacing.md,
+    borderRadius: 22,
+    borderCurve: 'continuous',
+    borderWidth: 4,
+    borderColor: colors.surface,
   },
-  heading: {
-    marginTop: spacing.xl,
+  drawing: {
+    shadowColor: colors.text,
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  sheet: {
+    marginTop: -spacing.xl,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.xl,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderCurve: 'continuous',
+    backgroundColor: colors.surface,
+  },
+  sheetInner: {
+    paddingTop: OVERHANG - spacing.md,
+  },
+  section: {
     gap: spacing.xs,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: sizes.hairline,
+    borderBottomColor: colors.border,
   },
-  facts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+  sectionLast: {
+    borderBottomWidth: 0,
   },
-  fact: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    gap: spacing.xs,
-  },
-  // As tall as a line of the text values beside it.
+  // As tall as a line of the text values above and below it.
   rating: {
-    height: 24,
+    height: 26,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
-  notes: {
-    marginTop: spacing.md,
-    gap: spacing.xs,
-  },
-  more: {
+  addMore: {
     minHeight: sizes.control,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.lg,
     marginTop: spacing.md,
-    paddingHorizontal: spacing.xl - 4,
-    borderRadius: radii.frame,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.control,
     borderWidth: sizes.hairline,
     borderColor: colors.borderStrong,
   },
-  morePressed: {
-    backgroundColor: colors.surfacePressed,
+  failure: {
+    marginTop: spacing.lg,
   },
-  footer: {
+  bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.screen,
+    backgroundColor: colors.surface,
+    borderTopWidth: sizes.hairline,
+    borderTopColor: colors.border,
+  },
+  barInner: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  barButton: {
     flex: 1,
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    paddingTop: spacing.xxxl,
   },
 });

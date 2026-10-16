@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { CupMark, Text } from "@/components/ui";
-import { formatDate, t, weekdayInitials } from "@/i18n";
+import { formatDate, weekdayInitials } from "@/i18n";
 import { colors, radii, spacing } from "@/theme";
 
 import { useSticker } from "./sticker";
@@ -16,8 +16,6 @@ type MonthCalendarProps = {
   entriesByDay: Map<number, Entry[]>;
   selectedDay: number | null;
   onSelectDay: (day: number | null) => void;
-  // Called for a day without a coffee, to start one on it.
-  onLogDay: (day: number) => void;
 };
 
 // Weeks run Monday to Sunday. Empty slots pad the first and last week.
@@ -48,7 +46,6 @@ export function MonthCalendar({
   entriesByDay,
   selectedDay,
   onSelectDay,
-  onLogDay,
 }: MonthCalendarProps) {
   const weeks = useMemo(() => buildWeeks(month), [month]);
   const initials = useMemo(() => weekdayInitials(), []);
@@ -102,19 +99,15 @@ export function MonthCalendar({
               <View key={dayIndex} style={styles.slot}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={
-                    hasCoffee ? date : t("diary.logOn", { day: date })
-                  }
+                  accessibilityLabel={date}
                   accessibilityState={{
                     selected: selectedDay === day,
                     disabled: future,
                   }}
                   disabled={future}
-                  onPress={() =>
-                    hasCoffee
-                      ? onSelectDay(selectedDay === day ? null : day)
-                      : onLogDay(day)
-                  }
+                  // Every day is picked the same way; the list below offers to
+                  // log a coffee on it, so a tap never opens the form by surprise.
+                  onPress={() => onSelectDay(selectedDay === day ? null : day)}
                   style={({ pressed }) => [
                     styles.day,
                     hasCoffee && !photo && styles.dayWithCoffee,
@@ -227,7 +220,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
     borderRadius: radii.control - 2,
-    backgroundColor: colors.background,
+    // A shade darker than the page the calendar sits on.
+    backgroundColor: "rgba(232, 222, 212, 0.6)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",

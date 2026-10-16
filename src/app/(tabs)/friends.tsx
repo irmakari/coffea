@@ -44,9 +44,9 @@ export default function FriendsScreen() {
             <ScreenHeader title={t('feed.title')} />
           </View>
           <View style={styles.headerActions}>
-            <IconButton icon="addFriend" label={t('friends.add')} onPress={() => router.push('/friends/add')} />
+            <IconButton plain icon="addFriend" label={t('friends.add')} onPress={() => router.push('/friends/add')} />
             <View>
-              <IconButton icon="friends" label={t('feed.manage')} onPress={() => router.push('/friends/manage')} />
+              <IconButton plain icon="friends" label={t('feed.manage')} onPress={() => router.push('/friends/manage')} />
               {incoming.length > 0 ? <View style={styles.badge} pointerEvents="none" /> : null}
             </View>
           </View>

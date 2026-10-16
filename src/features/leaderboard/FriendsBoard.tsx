@@ -7,7 +7,7 @@ import { personName } from '@/features/friends/friendsApi';
 import { formatNumber, t } from '@/i18n';
 import { fonts, palette, radii, sizes, spacing } from '@/theme';
 
-import { rank, type Ranked, type Standing } from './leaderboardApi';
+import { rank, type Metric, type Ranked, type Standing } from './leaderboardApi';
 import { standingName, valueLabel } from './StandingRow';
 
 const SHOWN = 3;
@@ -15,7 +15,7 @@ const SHOWN = 3;
 export const boardTabs = ['week', 'album'] as const;
 type BoardTab = (typeof boardTabs)[number];
 
-const ink = {
+export const ink = {
   card: palette.espresso,
   raised: palette.darkRoast,
   text: palette.softWhite,
@@ -25,7 +25,7 @@ const ink = {
 };
 
 // The place in a circle: the leader's filled in latte, the rest outlined.
-function Place({ rank: place }: { rank: number }) {
+export function Place({ rank: place }: { rank: number }) {
   const first = place === 1;
   return (
     <View style={[styles.place, first ? styles.placeFirst : styles.placeOther]}>
@@ -36,7 +36,7 @@ function Place({ rank: place }: { rank: number }) {
   );
 }
 
-function Row({ standing, unit, leaderValue, isMe }: { standing: Ranked; unit: 'cups' | 'album'; leaderValue: number; isMe: boolean }) {
+export function Row({ standing, unit, leaderValue, isMe }: { standing: Ranked; unit: Metric; leaderValue: number; isMe: boolean }) {
   const name = isMe ? t('feed.you') : personName(standing);
   const share = leaderValue > 0 ? standing.value / leaderValue : 0;
   return (

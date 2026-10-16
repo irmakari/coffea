@@ -14,7 +14,19 @@ import { MoreCoffeesSheet } from './MoreCoffeesSheet';
 import { PhotoField } from './PhotoField';
 import { cancelUpload, isLocalPhoto, startUpload } from './photoStorage';
 import { RatingInput } from './RatingInput';
-import { coffeeTypes, milkTypes, parsePrice, takesMilk, type EntryDraft } from './types';
+import {
+  coffeeTypes,
+  milkTypes,
+  parsePrice,
+  servingSizes,
+  shotCounts,
+  takesMilk,
+  takesShots,
+  takesSize,
+  temperatures,
+  venues,
+  type EntryDraft,
+} from './types';
 
 type EntryFormProps = {
   initialValues: EntryDraft;
@@ -35,11 +47,9 @@ type EntryFormProps = {
 const CAFE_SUGGESTIONS = 6;
 
 // Cafés from the journal, most recently visited first, written as they were
-// first saved. Home always comes first, for coffees made in the kitchen.
+// first saved. Coffee at home is said with "Where" instead.
 function cafeSuggestions(cafes: (string | null)[], typed: string): string[] {
   const seen = new Map<string, string>();
-  const home = t('entry.cafe.home');
-  seen.set(home.toLowerCase(), home);
   for (const cafe of cafes) {
     const label = cafe?.trim();
     if (label && !seen.has(label.toLowerCase())) seen.set(label.toLowerCase(), label);
@@ -52,7 +62,49 @@ function cafeSuggestions(cafes: (string | null)[], typed: string): string[] {
 }
 
 function hasDetails(draft: EntryDraft) {
-  return draft.cafe !== '' || draft.rating !== null || draft.price !== '' || draft.notes !== '';
+  return (
+    draft.cafe !== '' ||
+    draft.rating !== null ||
+    draft.price !== '' ||
+    draft.notes !== '' ||
+    draft.size !== null ||
+    draft.shots !== null ||
+    draft.temperature !== null ||
+    draft.venue !== null
+  );
+}
+
+// A row of chips where one may be picked, and picking it again clears it.
+function ChoiceGroup<T extends string | number>({
+  label,
+  options,
+  value,
+  labelOf,
+  onChange,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T | null;
+  labelOf: (option: T) => string;
+  onChange: (value: T | null) => void;
+}) {
+  return (
+    <View style={styles.group}>
+      <Text variant="label" color="textSecondary">
+        {label}
+      </Text>
+      <View style={styles.chips} accessibilityRole="radiogroup">
+        {options.map((option) => (
+          <Chip
+            key={String(option)}
+            label={labelOf(option)}
+            selected={value === option}
+            onPress={() => onChange(value === option ? null : option)}
+          />
+        ))}
+      </View>
+    </View>
+  );
 }
 
 function differs(draft: EntryDraft, initial: EntryDraft) {
@@ -203,6 +255,38 @@ export function EntryForm({
 
         {detailsOpen ? (
           <>
+            {takesSize(draft.type) ? (
+              <ChoiceGroup
+                label={t('entry.size.label')}
+                options={servingSizes}
+                value={draft.size}
+                labelOf={(size) => t(`entry.size.${size}`)}
+                onChange={(size) => update({ size })}
+              />
+            ) : null}
+            {takesShots(draft.type) ? (
+              <ChoiceGroup
+                label={t('entry.shots.label')}
+                options={shotCounts}
+                value={draft.shots}
+                labelOf={(shots) => String(shots)}
+                onChange={(shots) => update({ shots })}
+              />
+            ) : null}
+            <ChoiceGroup
+              label={t('entry.temperature.label')}
+              options={temperatures}
+              value={draft.temperature}
+              labelOf={(temperature) => t(`entry.temperature.${temperature}`)}
+              onChange={(temperature) => update({ temperature })}
+            />
+            <ChoiceGroup
+              label={t('entry.venue.label')}
+              options={venues}
+              value={draft.venue}
+              labelOf={(venue) => t(`entry.venue.${venue}`)}
+              onChange={(venue) => update({ venue })}
+            />
             <TextField
               label={t('entry.cafe.label')}
               placeholder={t('entry.cafe.placeholder')}

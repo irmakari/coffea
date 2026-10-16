@@ -1,7 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,11 +10,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   Button,
-  Card,
   Chip,
   CoffeePhoto,
   EmptyState,
-  Icon,
   IconButton,
   LoadingState,
   Screen,
@@ -37,7 +34,7 @@ import { startLog } from "@/features/entries/logDraft";
 import { MonthCalendar } from "@/features/entries/MonthCalendar";
 import type { Entry } from "@/features/entries/types";
 import { formatDate, formatNumber, t } from "@/i18n";
-import { colors, contentColumn, radii, sizes, spacing } from "@/theme";
+import { colors, contentColumn, sizes, spacing } from "@/theme";
 
 function countLabel(count: number) {
   if (count === 0) return t("diary.count.none");
@@ -171,6 +168,7 @@ export default function DiaryScreen() {
               label={t(`diary.views.${option}`)}
               selected={view === option}
               onPress={() => chooseView(option)}
+              plain
             />
           ))}
         </View>
@@ -216,6 +214,7 @@ export default function DiaryScreen() {
               </Text>
               <View style={styles.switcher}>
                 <IconButton
+                  plain
                   icon="chevronLeft"
                   label={t("diary.previousMonth")}
                   onPress={() => changeMonth(-1)}
@@ -228,6 +227,7 @@ export default function DiaryScreen() {
                   pointerEvents={isCurrentMonth ? "none" : "auto"}
                 >
                   <IconButton
+                    plain
                     icon="chevronRight"
                     label={t("diary.nextMonth")}
                     onPress={() => changeMonth(1)}
@@ -236,33 +236,20 @@ export default function DiaryScreen() {
               </View>
             </View>
 
-            <Pressable
-              accessibilityRole="search"
-              accessibilityLabel={t("search.open")}
-              onPress={() => router.push("/search")}
-              style={({ pressed }) => [
-                styles.search,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Icon name="search" size={18} color="textMuted" />
-              <Text color="textMuted">{t("search.open")}</Text>
-            </Pressable>
-
-            <Card style={styles.calendarCard}>
+            
+            <View style={styles.calendarCard}>
               <MonthCalendar
                 month={month}
                 entriesByDay={entriesByDay}
                 selectedDay={selectedDay}
                 onSelectDay={setSelectedDay}
-                onLogDay={logOn}
               />
-            </Card>
+            </View>
 
             <View style={styles.list}>
               <SectionHeader title={listTitle} />
               {shown.length > 0 ? (
-                <Card style={styles.listCard}>
+                <View>
                   {shown.map((entry, index) => (
                     <EntryRow
                       key={entry.id}
@@ -270,12 +257,18 @@ export default function DiaryScreen() {
                       last={index === shown.length - 1}
                     />
                   ))}
-                </Card>
+                </View>
+              ) : selectedDay !== null ? (
+                <Text color="textSecondary">{t("diary.noneOnDay")}</Text>
               ) : null}
               {selectedDay !== null ? (
                 <Button
                   variant="quiet"
-                  label={t("diary.logOnThisDay")}
+                  label={t(
+                    shown.length > 0
+                      ? "diary.logOnThisDay"
+                      : "diary.logFirstOnThisDay",
+                  )}
                   onPress={() => logOn(selectedDay)}
                   style={styles.logOn}
                 />
@@ -327,23 +320,10 @@ const styles = StyleSheet.create({
   monthPill: {
     height: sizes.chip,
     paddingHorizontal: spacing.md + 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
     justifyContent: "center",
   },
   disabled: {
     opacity: 0.35,
-  },
-  // Looks like the field it leads to.
-  search: {
-    minHeight: sizes.control,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.control,
-    backgroundColor: colors.surface,
   },
   pressed: {
     opacity: 0.7,
@@ -351,15 +331,12 @@ const styles = StyleSheet.create({
   logOn: {
     marginTop: spacing.xs,
   },
+  // Straight on the page, like the lists below it.
   calendarCard: {
-    marginTop: spacing.md,
-    padding: spacing.lg,
+    marginTop: spacing.xl,
   },
   list: {
     marginTop: spacing.xl + 4,
-  },
-  listCard: {
-    paddingVertical: spacing.xs,
   },
   emptyFrame: {
     width: 148,
