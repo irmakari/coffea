@@ -31,8 +31,9 @@ import { isCoffeeType } from "@/features/entries/types";
 import { computeStreak } from "@/features/stats/stats";
 import { AVATAR_SIZE, useProfile } from "@/features/profile/ProfileProvider";
 import { useTabCup } from "@/features/profile/tabCup";
+import { reminderTime, useReminderSettings } from "@/features/reminders/streakReminder";
 import { useTheme } from "@/features/theme/theme";
-import { currencyLabel, formatNumber, t } from "@/i18n";
+import { currencyLabel, formatDate, formatNumber, t } from "@/i18n";
 import { colors, radii, sizes, spacing, themed } from "@/theme";
 
 export default function ProfileScreen() {
@@ -43,6 +44,7 @@ export default function ProfileScreen() {
   const streak = computeStreak(entries);
   const album = buildAlbum(entries);
   const theme = useTheme();
+  const reminder = useReminderSettings();
   const [signingOut, setSigningOut] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -226,6 +228,15 @@ export default function ProfileScreen() {
             <ListRow
               label={t("profile.wheel")}
               onPress={() => router.push("/wheel")}
+            />
+            <ListRow
+              label={t("profile.reminder")}
+              value={
+                reminder.enabled
+                  ? formatDate(reminderTime(reminder), "time")
+                  : t("profile.reminderOff")
+              }
+              onPress={() => router.push("/settings/reminder")}
             />
             <ListRow
               label={t("profile.currency")}

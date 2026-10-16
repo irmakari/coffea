@@ -46,7 +46,13 @@
       ],
       "expo-sqlite",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "color": "#D9BBA0"
+        }
+      ]
     ],
     "scheme": "coffea",
     "experiments": {

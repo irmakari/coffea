@@ -9,10 +9,12 @@ import { BucketListProvider } from '@/features/bucketList/BucketListProvider';
 import { EntriesProvider } from '@/features/entries/EntriesProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { ProfileProvider } from '@/features/profile/ProfileProvider';
+import { setUpNotifications, useStreakReminders } from '@/features/reminders/streakReminder';
 import { useTheme } from '@/features/theme/theme';
 import { colors, fontAssets, isDarkTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+setUpNotifications();
 
 // A page opened from a link, such as an invite, has the tabs beneath it, so
 // closing it lands somewhere instead of nowhere.
@@ -40,6 +42,7 @@ function RootNavigator() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   const { session, loading } = useAuth();
   const theme = useTheme();
+  useStreakReminders(session !== null);
   // The splash screen stays up until we know which side of sign-in to show.
   const ready = (fontsLoaded || !!fontError) && !loading;
 
@@ -71,6 +74,7 @@ function RootNavigator() {
           <Stack.Screen name="settings/currency" />
           <Stack.Screen name="settings/cup" />
           <Stack.Screen name="settings/theme" />
+          <Stack.Screen name="settings/reminder" />
           <Stack.Screen name="settings/name" options={{ presentation: 'modal' }} />
           <Stack.Screen name="settings/username" options={{ presentation: 'modal' }} />
           <Stack.Screen name="friends/manage" />

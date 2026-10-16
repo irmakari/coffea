@@ -300,6 +300,8 @@ export const en = {
     currency: 'Currency',
     cup: 'Tab bar cup',
     theme: 'Theme',
+    reminder: 'Streak reminder',
+    reminderOff: 'Off',
     account: 'Account',
     name: 'Name',
     username: 'Username',
@@ -513,6 +515,23 @@ export const en = {
     requests: {
       one: '1 friend request',
       other: '{{count}} friend requests',
+    },
+  },
+  reminder: {
+    title: 'Keep your streak going',
+    body: {
+      streak: 'You are on a {{count}}-day streak. Log today’s coffee to keep it.',
+      plain: 'No coffee logged today yet. Had one?',
+    },
+    channel: 'Streak reminders',
+    settings: {
+      title: 'Streak reminder',
+      body: 'One nudge in the evening, only on days you have not logged a coffee.',
+      toggle: 'Remind me',
+      toggleBody: 'Skipped on days that already have a coffee.',
+      time: 'Time',
+      denied: 'Notifications for Coffea are turned off in your phone’s settings.',
+      openSettings: 'Open Settings',
     },
   },
   friendPage: {
