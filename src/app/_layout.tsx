@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect } from 'react';
 
+import { AlertHost } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BucketListProvider } from '@/features/bucketList/BucketListProvider';
 import { EntriesProvider } from '@/features/entries/EntriesProvider';
@@ -90,6 +91,7 @@ function RootNavigator() {
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
+      <AlertHost />
     </Fragment>
   );
 }

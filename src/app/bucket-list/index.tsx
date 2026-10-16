@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import {
   Button,
@@ -12,6 +12,7 @@ import {
   Screen,
   SectionHeader,
   Text,
+  showAlert,
 } from '@/components/ui';
 import type { BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
@@ -68,7 +69,7 @@ export default function BucketListScreen() {
 
   // A coffee that has just been tried is one worth writing down.
   const offerToLog = (item: BucketItem) => {
-    Alert.alert(t('bucketList.log.title'), t('bucketList.log.body', { name: item.name }), [
+    showAlert(t('bucketList.log.title'), t('bucketList.log.body', { name: item.name }), [
       { text: t('bucketList.log.later'), style: 'cancel' },
       {
         text: t('bucketList.log.confirm'),

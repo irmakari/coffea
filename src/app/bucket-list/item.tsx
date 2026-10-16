@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDiscardGuard } from '@/components/navigation/useDiscardGuard';
-import { Button, EmptyState, KeyboardAvoider, LoadingState, ModalHeader, Screen, Text, TextField } from '@/components/ui';
+import { Button, EmptyState, KeyboardAvoider, LoadingState, ModalHeader, Screen, Text, TextField, showAlert } from '@/components/ui';
 import { emptyBucketDraft, type BucketDraft, type BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
 import { t } from '@/i18n';
@@ -132,7 +132,7 @@ function BucketItemForm({ existing }: { existing?: BucketItem }) {
               disabled={busy === 'saving'}
               loading={busy === 'deleting'}
               onPress={() =>
-                Alert.alert(t('bucketList.form.deleteTitle'), undefined, [
+                showAlert(t('bucketList.form.deleteTitle'), undefined, [
                   { text: t('common.cancel'), style: 'cancel' },
                   { text: t('bucketList.form.deleteConfirm'), style: 'destructive', onPress: removeItem },
                 ])

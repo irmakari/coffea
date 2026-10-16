@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -15,6 +15,7 @@ import {
   LoadingState,
   Screen,
   Text,
+  showAlert,
 } from '@/components/ui';
 import { albumSlots, slotNumber } from '@/features/album/album';
 import { typeLabel } from '@/features/entries/display';
@@ -176,7 +177,7 @@ export default function EntryScreen() {
   const share = () => router.push({ pathname: '/entry/[id]/share', params: { id: entry.id } });
 
   const confirmDelete = () => {
-    Alert.alert(t('entry.delete.title'), t('entry.delete.body'), [
+    showAlert(t('entry.delete.title'), t('entry.delete.body'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('entry.delete.confirm'),
