@@ -45,13 +45,18 @@ export const en = {
       afternoon: 'Good afternoon',
       evening: 'Good evening',
     },
-    greetingWithName: '{{greeting}}, {{name}}',
     logAction: 'Log a coffee',
     summary: {
       one: '1 coffee in your journal',
       other: '{{count}} coffees in your journal',
     },
-    latest: 'Latest',
+    today: {
+      title: 'Today',
+      more: '+{{count}} more today',
+      invite: 'Time for a {{coffee}}?',
+      inviteAny: 'Nothing logged yet today',
+      logFavorite: 'Log a {{coffee}}',
+    },
     seeAll: 'See All',
     when: {
       today: 'Today, {{time}}',
@@ -97,6 +102,9 @@ export const en = {
     home: {
       title: 'Your coffee album',
       progress: '{{collected}} of {{total}} coffees collected',
+      counts: '{{collected}} collected · {{left}} to discover',
+      nextLabel: 'Next to try',
+      complete: 'Every coffee collected',
       empty: 'Try a new coffee to start your album.',
     },
   },

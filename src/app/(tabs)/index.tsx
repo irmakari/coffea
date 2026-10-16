@@ -1,10 +1,9 @@
 import { router } from "expo-router";
 import { setStatusBarStyle } from "expo-status-bar";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
   View,
@@ -16,20 +15,18 @@ import {
   Card,
   CupMark,
   EmptyState,
-  Icon,
   LoadingState,
   SectionHeader,
   Text,
 } from "@/components/ui";
-import { buildAlbum, collectedCount } from "@/features/album/album";
-import { saveDiaryView } from "@/features/album/diaryView";
+import { AlbumGlance } from "@/features/album/AlbumGlance";
 import { useEntries } from "@/features/entries/EntriesProvider";
 import {
-  EntryCard,
   EntryRow,
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
+import { TodayCard } from "@/features/home/TodayCard";
 import { StreakCard } from "@/features/stats/StreakCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
 import { useHeroStatusBar } from "@/features/theme/theme";
@@ -83,14 +80,25 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
 
           <View style={styles.heroBody}>
             <View style={styles.heroText}>
-              <Text variant="display" color="heroText" accessibilityRole="header">
-                {profile.displayName
-                  ? t("home.greetingWithName", {
-                      greeting,
-                      name: profile.displayName,
-                    })
-                  : greeting}
-              </Text>
+              {/* The greeting keeps to one line, shrinking a little where it
+                  must, and the name sits under it, so "Good afternoon" is
+                  never split. */}
+              <View accessible accessibilityRole="header">
+                <Text
+                  variant="display"
+                  color="heroText"
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                >
+                  {profile.displayName ? `${greeting},` : greeting}
+                </Text>
+                {profile.displayName ? (
+                  <Text variant="display" color="heroText" numberOfLines={1}>
+                    {profile.displayName}
+                  </Text>
+                ) : null}
+              </View>
               <Text style={styles.heroLine}>
                 {count === 0
                   ? t("home.prompt")
@@ -111,49 +119,6 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
         </View>
       </View>
     </View>
-  );
-}
-
-// How far the album has come, and the way into it.
-function AlbumCard() {
-  const { entries } = useEntries();
-  const album = useMemo(() => buildAlbum(entries), [entries]);
-  const collected = collectedCount(album);
-
-  const open = () => {
-    saveDiaryView("album");
-    router.navigate("/diary");
-  };
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={open}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <Card outline style={styles.albumCard}>
-        <View style={styles.albumText}>
-          <Text variant="subheading">{t("album.home.title")}</Text>
-          <Text variant="small" color="textSecondary">
-            {collected === 0
-              ? t("album.home.empty")
-              : t("album.home.progress", {
-                  collected: formatNumber(collected),
-                  total: formatNumber(album.length),
-                })}
-          </Text>
-          <View style={styles.albumTrack}>
-            <View
-              style={[
-                styles.albumFill,
-                { width: `${(collected / album.length) * 100}%` },
-              ]}
-            />
-          </View>
-        </View>
-        <Icon name="chevronRight" size={16} color="textMuted" />
-      </Card>
-    </Pressable>
   );
 }
 
@@ -181,8 +146,18 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const [latest, ...rest] = entries;
-  const earlier = rest.slice(0, EARLIER_COUNT);
+  const [latest] = entries;
+  // Today's coffees lead the page; the ones before them follow as earlier.
+  const now = new Date();
+  const today = entries.filter((entry) => {
+    const at = new Date(entry.consumedAt);
+    return (
+      at.getFullYear() === now.getFullYear() &&
+      at.getMonth() === now.getMonth() &&
+      at.getDate() === now.getDate()
+    );
+  });
+  const earlier = entries.slice(today.length, today.length + EARLIER_COUNT);
   const favorites = entries
     .filter((entry) => entry.isFavorite)
     .slice(0, FAVORITES_COUNT);
@@ -248,18 +223,18 @@ export default function HomeScreen() {
             <View>
               <SectionHeader
                 large
-                title={t("home.latest")}
+                title={t("home.today.title")}
                 action={{
                   label: t("home.seeAll"),
                   onPress: () => router.navigate("/diary"),
                 }}
               />
-              <EntryCard flat entry={latest} />
+              <TodayCard today={today} />
             </View>
 
             <StreakCard entries={entries} />
 
-            <AlbumCard />
+            <AlbumGlance />
 
             {favorites.length > 0 ? (
               <View>
@@ -391,27 +366,6 @@ const styles = themed(() => ({
   shelfContent: {
     paddingHorizontal: spacing.screen,
     gap: spacing.md,
-  },
-  albumCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.lg,
-  },
-  albumText: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  albumTrack: {
-    height: 6,
-    marginTop: spacing.sm,
-    borderRadius: radii.pill,
-    backgroundColor: colors.border,
-    overflow: "hidden",
-  },
-  albumFill: {
-    height: "100%",
-    borderRadius: radii.pill,
-    backgroundColor: colors.accent,
   },
   pressed: {
     opacity: 0.7,
