@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 
+import { showAlert } from '@/components/ui';
 import { t } from '@/i18n';
 
 // Whether the log tab holds a coffee that was started and not yet saved.
@@ -47,7 +47,7 @@ export function startLog(start: LogStart, onSettled?: () => void) {
     open();
     return;
   }
-  Alert.alert(t('quickLog.replace.title'), t('quickLog.replace.body'), [
+  showAlert(t('quickLog.replace.title'), t('quickLog.replace.body'), [
     { text: t('common.discard.keep'), style: 'cancel', onPress: onSettled },
     { text: t('quickLog.replace.confirm'), style: 'destructive', onPress: open },
   ]);

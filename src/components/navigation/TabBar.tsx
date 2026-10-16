@@ -1,6 +1,8 @@
-import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import type { MaterialTopTabNavigationEventMap } from 'expo-router/js-top-tabs';
+import type { NavigationHelpers, ParamListBase, TabNavigationState } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CupMark, Icon, Text, type IconName } from '@/components/ui';
 import { startLog } from '@/features/entries/logDraft';
@@ -24,7 +26,14 @@ const LOG_ROUTE = 'log';
 // How far the tip's tail shows below its bubble.
 const TIP_TAIL = 5;
 
-export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
+// The pager's own type for these props is loose, hence the two it is used for.
+export type TabBarProps = {
+  state: TabNavigationState<ParamListBase>;
+  navigation: NavigationHelpers<ParamListBase, MaterialTopTabNavigationEventMap>;
+};
+
+export function TabBar({ state, navigation }: TabBarProps) {
+  const insets = useSafeAreaInsets();
   const cup = useTabCup();
   // A long press on the cup offers every coffee, drawn, to start a log from.
   const [picking, setPicking] = useState(false);

@@ -1,8 +1,8 @@
 import { useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useCallback, useRef } from 'react';
-import { Alert } from 'react-native';
 
+import { showAlert } from '@/components/ui';
 import { t } from '@/i18n';
 
 // Asks before a screen with unsaved changes is left, whichever way that
@@ -18,7 +18,7 @@ export function useDiscardGuard(dirty: boolean) {
       navigation.dispatch(data.action);
       return;
     }
-    Alert.alert(t('common.discard.title'), t('common.discard.body'), [
+    showAlert(t('common.discard.title'), t('common.discard.body'), [
       { text: t('common.discard.keep'), style: 'cancel' },
       {
         text: t('common.discard.confirm'),

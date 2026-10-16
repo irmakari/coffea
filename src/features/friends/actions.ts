@@ -1,5 +1,6 @@
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Platform } from 'react-native';
 
+import { showAlert } from '@/components/ui';
 import { t } from '@/i18n';
 
 type Action = {
@@ -27,7 +28,7 @@ export function showActions(title: string, actions: Action[]) {
     );
     return;
   }
-  Alert.alert(
+  showAlert(
     title,
     undefined,
     [
@@ -44,7 +45,7 @@ export function showActions(title: string, actions: Action[]) {
 
 // Asks before something that cannot be quietly taken back.
 export function confirm(title: string, body: string | undefined, label: string, onConfirm: () => void) {
-  Alert.alert(title, body, [
+  showAlert(title, body, [
     { text: t('common.cancel'), style: 'cancel' },
     { text: label, style: 'destructive', onPress: onConfirm },
   ]);

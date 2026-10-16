@@ -1,5 +1,4 @@
-import { Alert } from 'react-native';
-
+import { showAlert } from '@/components/ui';
 import { t } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 
@@ -40,7 +39,7 @@ export function askToReport({ person, onBlock, onError }: ReportOptions) {
           onError();
           return;
         }
-        Alert.alert(t('report.thanks.title'), t('report.thanks.body'), [
+        showAlert(t('report.thanks.title'), t('report.thanks.body'), [
           { text: t('common.done'), style: 'cancel' },
           { text: t('report.thanks.block', { name: person.name }), style: 'destructive', onPress: onBlock },
         ]);

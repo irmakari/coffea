@@ -1,13 +1,7 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import {
   Avatar,
@@ -16,6 +10,7 @@ import {
   Screen,
   SectionHeader,
   Text,
+  showAlert,
 } from "@/components/ui";
 import { deleteAccount, signOut } from "@/features/auth/authApi";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -109,7 +104,7 @@ export default function ProfileScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert(t("profile.signOut.title"), undefined, [
+    showAlert(t("profile.signOut.title"), undefined, [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("auth.signOut"), onPress: handleSignOut },
     ]);
@@ -129,7 +124,7 @@ export default function ProfileScreen() {
   };
 
   const confirmDelete = () => {
-    Alert.alert(t("profile.delete.title"), t("profile.delete.body"), [
+    showAlert(t("profile.delete.title"), t("profile.delete.body"), [
       { text: t("common.cancel"), style: "cancel" },
       {
         text: t("profile.delete.confirm"),

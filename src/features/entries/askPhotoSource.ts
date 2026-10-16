@@ -1,5 +1,6 @@
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Platform } from 'react-native';
 
+import { showAlert } from '@/components/ui';
 import { t } from '@/i18n';
 
 import type { PhotoSource } from './pickPhoto';
@@ -29,7 +30,7 @@ export function askPhotoSource(title: string, onChoose: (source: PhotoSource) =>
     );
     return;
   }
-  Alert.alert(
+  showAlert(
     title,
     undefined,
     [

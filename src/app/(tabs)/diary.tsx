@@ -6,6 +6,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import PagerView from "react-native-pager-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -70,15 +71,24 @@ export default function DiaryScreen() {
     return () => cancelAnimationFrame(frame);
   }, [selectedDay, height]);
   const [view, setView] = useState<DiaryView>(readDiaryView);
+  // The two views are pages of their own, so a swipe moves between them
+  // before it moves on to the next tab, as Instagram's profile tabs do.
+  const pagerRef = useRef<PagerView>(null);
   // Home's album card picks the view before it opens this tab.
   useFocusEffect(
     useCallback(() => {
-      setView(readDiaryView());
+      const saved = readDiaryView();
+      setView(saved);
+      pagerRef.current?.setPageWithoutAnimation(diaryViews.indexOf(saved));
     }, []),
   );
-  const chooseView = (next: DiaryView) => {
+  const showView = (next: DiaryView) => {
     saveDiaryView(next);
     setView(next);
+  };
+  const chooseView = (next: DiaryView) => {
+    showView(next);
+    pagerRef.current?.setPage(diaryViews.indexOf(next));
   };
   const album = useMemo(() => buildAlbum(entries), [entries]);
 
@@ -166,20 +176,17 @@ export default function DiaryScreen() {
           "day",
         );
 
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={refresh}
+      tintColor={colors.textMuted}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[contentColumn, styles.content]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={colors.textMuted}
-          />
-        }
-      >
+      <View style={[contentColumn, styles.bar]}>
         <View style={styles.views} accessibilityRole="radiogroup">
           {diaryViews.map((option) => (
             <Chip
@@ -199,35 +206,24 @@ export default function DiaryScreen() {
             />
           </View>
         </View>
+      </View>
 
-        {view === "album" ? (
-          <>
-            <View style={styles.header}>
-              <Text
-                variant="display"
-                accessibilityRole="header"
-                style={styles.monthName}
-              >
-                {t("album.title")}
-              </Text>
-              <View style={styles.monthPill}>
-                <Text variant="label">
-                  {t("album.progress", {
-                    collected: formatNumber(collectedCount(album)),
-                    total: formatNumber(album.length),
-                  })}
-                </Text>
-              </View>
-            </View>
-            <Text color="textSecondary" style={styles.albumIntro}>
-              {t("album.body")}
-            </Text>
-            <View style={styles.album}>
-              <AlbumGrid cards={album} />
-            </View>
-          </>
-        ) : (
-          <>
+      <PagerView
+        ref={pagerRef}
+        style={styles.pager}
+        initialPage={diaryViews.indexOf(view)}
+        onPageSelected={(event) => {
+          const next = diaryViews[event.nativeEvent.position];
+          if (next && next !== view) showView(next);
+        }}
+      >
+        <View key="calendar">
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[contentColumn, styles.content]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          >
             <View style={styles.header}>
               <Text
                 variant="display"
@@ -263,7 +259,6 @@ export default function DiaryScreen() {
               </View>
             </View>
 
-            
             <View style={styles.calendarCard}>
               <MonthCalendar
                 month={month}
@@ -306,9 +301,40 @@ export default function DiaryScreen() {
                 />
               ) : null}
             </View>
-          </>
-        )}
-      </ScrollView>
+          </ScrollView>
+        </View>
+        <View key="album">
+          <ScrollView
+            contentContainerStyle={[contentColumn, styles.content]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          >
+            <View style={styles.header}>
+              <Text
+                variant="display"
+                accessibilityRole="header"
+                style={styles.monthName}
+              >
+                {t("album.title")}
+              </Text>
+              <View style={styles.monthPill}>
+                <Text variant="label">
+                  {t("album.progress", {
+                    collected: formatNumber(collectedCount(album)),
+                    total: formatNumber(album.length),
+                  })}
+                </Text>
+              </View>
+            </View>
+            <Text color="textSecondary" style={styles.albumIntro}>
+              {t("album.body")}
+            </Text>
+            <View style={styles.album}>
+              <AlbumGrid cards={album} />
+            </View>
+          </ScrollView>
+        </View>
+      </PagerView>
     </SafeAreaView>
   );
 }
@@ -318,16 +344,23 @@ const styles = themed(() => ({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  // The view chips stay put while the pages under them slide.
+  bar: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  pager: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxxl,
   },
   views: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    marginBottom: spacing.md,
   },
   // Search covers every month and the album alike, so it sits by the views.
   searchButton: {

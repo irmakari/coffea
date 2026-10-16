@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, Icon, KeyboardAvoider, Text, TextField } from '@/components/ui';
+import { Button, Chip, Icon, KeyboardAvoider, Text, TextField, showAlert } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { currencies } from '@/features/profile/currencies';
 import { currencyLabel, t } from '@/i18n';
@@ -167,7 +167,7 @@ export function EntryForm({
   const [hidden, setHidden] = useState(hiddenCafes);
   const suggestions = cafeSuggestions(cafes, draft.cafe, hidden);
   const askToHide = (cafe: string) =>
-    Alert.alert(t('entry.cafe.hideTitle', { cafe }), t('entry.cafe.hideBody'), [
+    showAlert(t('entry.cafe.hideTitle', { cafe }), t('entry.cafe.hideBody'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('entry.cafe.hideConfirm'),

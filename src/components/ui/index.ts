@@ -3,6 +3,7 @@ export { BackButton } from './BackButton';
 export { Button } from './Button';
 export { Card } from './Card';
 export { Chip } from './Chip';
+export { AlertHost, showAlert, type AlertButton } from './CoffeeAlert';
 export { CoffeePhoto } from './CoffeePhoto';
 export { CupMark } from './CupMark';
 export { EmptyState } from './EmptyState';
