@@ -3,10 +3,13 @@ import { useState } from 'react';
 import { Linking, Switch, View } from 'react-native';
 
 import { Button, PageHeader, Screen, Text } from '@/components/ui';
+import { useEntries } from '@/features/entries/EntriesProvider';
+import { useFavoriteCoffee } from '@/features/profile/favoriteCoffee';
 import {
   allowReminders,
   reminderTime,
   saveReminderSettings,
+  sendTestReminder,
   useReminderSettings,
 } from '@/features/reminders/streakReminder';
 import { formatDate, t } from '@/i18n';
@@ -17,6 +20,14 @@ export default function ReminderScreen() {
   // Set when the phone's settings have notifications for Coffea turned off.
   const [denied, setDenied] = useState(false);
   const time = reminderTime(settings);
+  const { entries } = useEntries();
+  const favorite = useFavoriteCoffee();
+  const [testSent, setTestSent] = useState(false);
+
+  const test = async () => {
+    await sendTestReminder(entries, favorite).catch(() => {});
+    setTestSent(true);
+  };
 
   const toggle = async (enabled: boolean) => {
     if (!enabled) {
@@ -80,6 +91,12 @@ export default function ReminderScreen() {
               saveReminderSettings({ ...settings, hour: picked.getHours(), minute: picked.getMinutes() })
             }
           />
+          <Button variant="secondary" label={t('reminder.settings.test')} onPress={test} />
+          {testSent ? (
+            <Text variant="small" color="textSecondary" align="center" accessibilityLiveRegion="polite">
+              {t('reminder.settings.testSent')}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </Screen>

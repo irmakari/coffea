@@ -75,6 +75,7 @@ function RootNavigator() {
           <Stack.Screen name="settings/cup" />
           <Stack.Screen name="settings/theme" />
           <Stack.Screen name="settings/reminder" />
+          <Stack.Screen name="settings/favorite" />
           <Stack.Screen name="settings/name" options={{ presentation: 'modal' }} />
           <Stack.Screen name="settings/username" options={{ presentation: 'modal' }} />
           <Stack.Screen name="friends/manage" />

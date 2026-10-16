@@ -5,7 +5,9 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { useEntries } from '@/features/entries/EntriesProvider';
+import { startLog } from '@/features/entries/logDraft';
 import type { Entry } from '@/features/entries/types';
+import { coffeeLabel, favoriteOf, useChosenFavorite } from '@/features/profile/favoriteCoffee';
 import { computeStreak } from '@/features/stats/stats';
 import { t } from '@/i18n';
 
@@ -107,8 +109,29 @@ async function cancelPlanned() {
   );
 }
 
+// What a reminder says. It offers the favorite coffee by name when there is
+// one, and names the streak when it is the one at stake tonight.
+function reminderContent(favorite: string | null, streak: number): Notifications.NotificationContentInput {
+  const coffee = favorite ? coffeeLabel(favorite) : null;
+  const body =
+    streak > 0
+      ? coffee
+        ? t('reminder.body.streakCoffee', { count: streak, coffee })
+        : t('reminder.body.streak', { count: streak })
+      : coffee
+        ? t('reminder.body.coffee', { coffee })
+        : t('reminder.body.plain');
+  // Tapping it opens the log on that coffee, ready to save.
+  return { title: t('reminder.title'), body, data: { kind: 'streak-reminder', drink: favorite } };
+}
+
 // Plans the coming week's reminders from the journal as it is now.
-export async function planReminders(entries: Entry[], settings: ReminderSettings, now = new Date()) {
+export async function planReminders(
+  entries: Entry[],
+  settings: ReminderSettings,
+  favorite: string | null,
+  now = new Date(),
+) {
   await cancelPlanned();
   if (!settings.enabled) return;
   const permission = await Notifications.getPermissionsAsync();
@@ -121,13 +144,9 @@ export async function planReminders(entries: Entry[], settings: ReminderSettings
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, settings.hour, settings.minute);
     if (at <= now || logged.has(dayKey(at))) continue;
     // Only tonight's streak is known; later days start from wherever it ends.
-    const body =
-      offset === 0 && streak.current > 0
-        ? t('reminder.body.streak', { count: streak.current })
-        : t('reminder.body.plain');
     await Notifications.scheduleNotificationAsync({
       identifier: `${ID_PREFIX}${dayKey(at)}`,
-      content: { title: t('reminder.title'), body },
+      content: reminderContent(favorite, offset === 0 ? streak.current : 0),
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: at,
@@ -137,17 +156,54 @@ export async function planReminders(entries: Entry[], settings: ReminderSettings
   }
 }
 
-// Keeps the planned reminders in step with the journal and the setting.
-// Signed out, none are left waiting.
+// One reminder a few seconds from now, worded as tonight's would be if no
+// coffee had been logged yet, to see how it looks.
+export async function sendTestReminder(entries: Entry[], favorite: string | null) {
+  const streak = computeStreak(entries);
+  // Counted as if today were still open, the way tonight's reminder sees it.
+  const atStake = streak.loggedToday ? Math.max(streak.current, 1) : streak.current;
+  await Notifications.scheduleNotificationAsync({
+    content: reminderContent(favorite, atStake),
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 5,
+      channelId: CHANNEL,
+    },
+  });
+}
+
+// Keeps the planned reminders in step with the journal, the setting and
+// the favorite. Signed out, none are left waiting.
 export function useStreakReminders(signedIn: boolean) {
   const { entries, status } = useEntries();
   const settings = useReminderSettings();
+  const picked = useChosenFavorite();
   useEffect(() => {
     if (!signedIn) {
       cancelPlanned().catch(() => {});
       return;
     }
     if (status !== 'ready') return;
-    planReminders(entries, settings).catch(() => {});
-  }, [signedIn, entries, status, settings]);
+    planReminders(entries, settings, favoriteOf(entries, picked)).catch(() => {});
+  }, [signedIn, entries, status, settings, picked]);
+}
+
+function openFromReminder(response: Notifications.NotificationResponse | null) {
+  if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+  const data = response.notification.request.content.data;
+  if (data?.kind !== 'streak-reminder') return;
+  startLog({ drink: typeof data.drink === 'string' ? data.drink : undefined });
+  Notifications.clearLastNotificationResponseAsync().catch(() => {});
+}
+
+// A tapped reminder opens the log on the favorite, whether the tap started
+// the app or found it running. Mounted with the tabs, so the log is there.
+export function useReminderTaps() {
+  useEffect(() => {
+    Notifications.getLastNotificationResponseAsync()
+      .then(openFromReminder)
+      .catch(() => {});
+    const subscription = Notifications.addNotificationResponseReceivedListener(openFromReminder);
+    return () => subscription.remove();
+  }, []);
 }

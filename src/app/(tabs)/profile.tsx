@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import { deleteAccount, signOut } from "@/features/auth/authApi";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { coffeeLabel, useFavoriteCoffee } from "@/features/profile/favoriteCoffee";
 import { buildAlbum, collectedCount } from "@/features/album/album";
 import { askPhotoSource } from "@/features/entries/askPhotoSource";
 import { useEntries } from "@/features/entries/EntriesProvider";
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
   const album = buildAlbum(entries);
   const theme = useTheme();
   const reminder = useReminderSettings();
+  const favorite = useFavoriteCoffee();
   const [signingOut, setSigningOut] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -228,6 +230,11 @@ export default function ProfileScreen() {
             <ListRow
               label={t("profile.wheel")}
               onPress={() => router.push("/wheel")}
+            />
+            <ListRow
+              label={t("profile.favorite")}
+              value={favorite ? coffeeLabel(favorite) : t("profile.favoriteNone")}
+              onPress={() => router.push("/settings/favorite")}
             />
             <ListRow
               label={t("profile.reminder")}

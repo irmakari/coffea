@@ -302,6 +302,8 @@ export const en = {
     theme: 'Theme',
     reminder: 'Streak reminder',
     reminderOff: 'Off',
+    favorite: 'Favorite coffee',
+    favoriteNone: 'Not yet',
     account: 'Account',
     name: 'Name',
     username: 'Username',
@@ -492,6 +494,11 @@ export const en = {
         matcha: 'Matcha',
       },
     },
+    favorite: {
+      title: 'Favorite coffee',
+      body: 'The one your evening reminder offers. Most often follows your journal.',
+      usual: 'Most often',
+    },
     cup: {
       title: 'Your cup',
       body: 'Pick the coffee that sits in the middle of the tab bar.',
@@ -521,6 +528,8 @@ export const en = {
     title: 'Keep your streak going',
     body: {
       streak: 'You are on a {{count}}-day streak. Log today’s coffee to keep it.',
+      streakCoffee: '{{count}} days in a row. A {{coffee}} to keep it going?',
+      coffee: 'No {{coffee}} today yet. Time for one?',
       plain: 'No coffee logged today yet. Had one?',
     },
     channel: 'Streak reminders',
@@ -532,6 +541,8 @@ export const en = {
       time: 'Time',
       denied: 'Notifications for Coffea are turned off in your phone’s settings.',
       openSettings: 'Open Settings',
+      test: 'Send a test reminder',
+      testSent: 'On its way, in a few seconds.',
     },
   },
   friendPage: {
