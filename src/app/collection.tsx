@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, PageHeader } from '@/components/ui';
@@ -8,7 +8,7 @@ import { collect, countLabel, isCollectionKind } from '@/features/collections/co
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryCard } from '@/features/entries/EntryCard';
 import { t } from '@/i18n';
-import { colors, contentColumn, spacing } from '@/theme';
+import { colors, contentColumn, spacing, themed } from '@/theme';
 
 export default function CollectionScreen() {
   const { kind, value } = useLocalSearchParams<{ kind?: string; value?: string }>();
@@ -52,7 +52,7 @@ export default function CollectionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -69,4 +69,4 @@ const styles = StyleSheet.create({
   separator: {
     height: spacing.xxl,
   },
-});
+}));

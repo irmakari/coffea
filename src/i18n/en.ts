@@ -58,7 +58,6 @@ export const en = {
       yesterday: 'Yesterday, {{time}}',
     },
     earlier: 'Earlier',
-    openDiary: 'See the whole diary',
     favorites: 'Favorites',
     prompt: 'Had a coffee today?',
     empty: {
@@ -289,12 +288,18 @@ export const en = {
   },
   profile: {
     title: 'Profile',
+    summary: {
+      coffees: 'Coffees',
+      streak: 'Day streak',
+      album: 'Album',
+    },
     journal: 'Journal',
     collections: 'Collections',
     stats: 'Statistics',
     wheel: 'What should I drink?',
     currency: 'Currency',
     cup: 'Tab bar cup',
+    theme: 'Theme',
     account: 'Account',
     name: 'Name',
     username: 'Username',
@@ -324,6 +329,23 @@ export const en = {
       all: 'All',
     },
     cups: 'Total cups',
+    summary: {
+      period: {
+        week: 'This week',
+        month: 'This month',
+        year: 'This year',
+        all: 'All time',
+      },
+      coffees: {
+        one: 'coffee',
+        other: 'coffees',
+      },
+      days: {
+        one: 'Coffee day',
+        other: 'Coffee days',
+      },
+    },
+    usuals: 'Your usuals',
     favorites: 'Favorites',
     averageRating: 'Avg rating',
     periodEmpty: 'No coffees in this period yet.',
@@ -349,15 +371,17 @@ export const en = {
     },
     caffeine: {
       total: 'Caffeine',
+      all: 'In total',
       perDay: 'Per coffee day',
       mg: '{{mg}} mg',
+      unit: 'mg',
       note: 'An estimate from each coffee type. Real cups vary.',
     },
     topRated: 'Highest rated',
     shelf: {
       week: 'This week',
       month: 'This month',
-      someOf: '{{shown}} of {{total}} coffees',
+      someOf: '{{shown}} of {{total}} coffees had a photo',
       back: 'Scroll back',
       forward: 'Scroll forward',
     },
@@ -457,6 +481,15 @@ export const en = {
       save: 'Save',
       error: 'That did not save. Please try again.',
     },
+    theme: {
+      title: 'Theme',
+      body: 'Colours for this phone. Your coffees look the same everywhere.',
+      names: {
+        latte: 'Latte',
+        espresso: 'Espresso',
+        matcha: 'Matcha',
+      },
+    },
     cup: {
       title: 'Your cup',
       body: 'Pick the coffee that sits in the middle of the tab bar.',
@@ -482,9 +515,27 @@ export const en = {
       other: '{{count}} friend requests',
     },
   },
+  friendPage: {
+    title: 'Friend',
+    gone: {
+      title: 'Not your friend anymore',
+      body: 'Their page shows only while you are friends.',
+    },
+    stats: {
+      week: 'Cups this week',
+      album: 'Album',
+      albumValue: '{{count}}/{{total}}',
+      rank: 'Album place',
+    },
+    firsts: 'New to them lately',
+    noFirsts: 'Nothing new to them in the last 30 days.',
+    noOtherFirsts: 'Nothing else new to them in the last 30 days.',
+    privacy: 'Friends see totals and the coffees they try for the first time, never notes, photos or cafés.',
+  },
   leaderboard: {
     title: 'Leaderboard',
     open: 'See the whole leaderboard',
+    invite: 'Invite',
     range: '{{start}} to {{end}}',
     rowLabel: 'Number {{rank}}, {{name}}, {{value}}',
     weeks: {
@@ -664,6 +715,7 @@ export const en = {
       remove: 'Remove from favorites',
       error: 'That did not save. Please try again.',
     },
+    logAgain: 'Log this again',
     delete: {
       action: 'Delete this coffee',
       title: 'Delete this coffee?',
@@ -679,6 +731,7 @@ export const en = {
       take: 'Take a photo',
       library: 'Choose from library',
       fallback: 'Or keep this drawing',
+      makingSticker: 'Making a sticker…',
       error: 'Your photos could not be opened. Please try again.',
       cameraError: 'The camera could not be opened. Please try again.',
       cameraDenied: 'Coffea is not allowed to use the camera. Allow it in Settings and try again.',
@@ -708,7 +761,7 @@ export const en = {
     details: {
       show: 'Add café, rating, price or notes',
       hide: 'Hide details',
-      add: 'Add more details',
+      add: 'Add details',
     },
     size: {
       label: 'Size',
@@ -739,7 +792,13 @@ export const en = {
     cafe: {
       label: 'Café',
       placeholder: 'Where was it?',
+      suggestionHint: 'Hold a café to stop suggesting it.',
+      hideHint: 'Hold to stop suggesting this café',
+      hideTitle: 'Stop suggesting {{cafe}}?',
+      hideBody: 'Coffees already saved there keep it.',
+      hideConfirm: 'Stop suggesting',
     },
+    saveHint: 'Pick a type or give your coffee a name to save it.',
     rating: {
       label: 'Rating',
       value: '{{count}} out of 5',

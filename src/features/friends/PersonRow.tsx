@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Avatar, Text } from '@/components/ui';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed } from '@/theme';
 
 import { personName, type Person } from './friendsApi';
 
@@ -10,15 +10,22 @@ type PersonRowProps = {
   person: Person;
   // Buttons at the end of the row.
   trailing?: ReactNode;
+  // Opens the person's page; the buttons at the end keep their own taps.
+  onPress?: () => void;
 };
 
-export function PersonRow({ person, trailing }: PersonRowProps) {
+export function PersonRow({ person, trailing, onPress }: PersonRowProps) {
   const name = personName(person);
   // The handle is only repeated when a display name stands in front of it.
   const handle = person.displayName && person.username ? `@${person.username}` : null;
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
       <Avatar uri={person.avatarUrl} cacheKey={person.avatarPath} name={name} size={44} />
       <View style={styles.text}>
         <Text variant="bodyStrong" numberOfLines={1}>
@@ -31,7 +38,7 @@ export function PersonRow({ person, trailing }: PersonRowProps) {
         ) : null}
       </View>
       {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -83,7 +90,7 @@ export function RowButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   row: {
     minHeight: 68,
     flexDirection: 'row',
@@ -92,6 +99,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: sizes.hairline,
     borderBottomColor: colors.border,
+  },
+  rowPressed: {
+    opacity: 0.7,
   },
   text: {
     flex: 1,
@@ -126,4 +136,4 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.35,
   },
-});
+}));

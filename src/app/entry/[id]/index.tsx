@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -21,11 +21,13 @@ import { typeLabel } from '@/features/entries/display';
 import { useEntries, useEntry } from '@/features/entries/EntriesProvider';
 import { useSticker } from '@/features/entries/sticker';
 import { isMilkType, MAX_RATING, type Entry } from '@/features/entries/types';
+import { startLog } from '@/features/entries/logDraft';
 import { showActions } from '@/features/friends/actions';
+import { useHeroStatusBar } from '@/features/theme/theme';
 import { caffeineOf } from '@/features/stats/caffeine';
 import { formatCurrency, formatDate, formatNumber, t } from '@/i18n';
 import { tapFeedback } from '@/lib/haptics';
-import { colors, contentColumn, radii, sizes, spacing } from '@/theme';
+import { colors, contentColumn, sizes, spacing, themed } from '@/theme';
 
 const VISUAL = 156;
 // How far the coffee reaches down over the white sheet.
@@ -51,7 +53,7 @@ function HeaderButton({
       hitSlop={spacing.xs}
       style={({ pressed }) => [styles.round, pressed && styles.pressed]}
     >
-      <Icon name={icon} size={22} filled={filled} />
+      <Icon name={icon} size={22} filled={filled} color="heroText" />
     </Pressable>
   );
 }
@@ -116,6 +118,7 @@ export default function EntryScreen() {
   const insets = useSafeAreaInsets();
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  useHeroStatusBar();
 
   // Where the coffee sits in the album, and how many times it was had up to
   // and including this one.
@@ -159,6 +162,7 @@ export default function EntryScreen() {
     .filter(Boolean)
     .join(' · ');
   const price = entry.price !== null && entry.currency ? formatCurrency(entry.price, entry.currency) : null;
+  // Nothing beyond the basics yet, so editing reads as filling it in.
   const bare = !entry.cafe && !entry.rating && !price && !entry.notes;
 
   const favorite = () => {
@@ -192,8 +196,15 @@ export default function EntryScreen() {
     ]);
   };
 
+  // The same coffee again, today: its name, type and café filled in.
+  const logAgain = () =>
+    startLog({ drink: entry.type ?? undefined, name: entry.name, cafe: entry.cafe ?? undefined });
+
   const more = () =>
-    showActions(entry.name, [{ label: t('entry.delete.action'), destructive: true, onPress: confirmDelete }]);
+    showActions(entry.name, [
+      { label: t('entry.logAgain'), onPress: logAgain },
+      { label: t('entry.delete.action'), destructive: true, onPress: confirmDelete },
+    ]);
 
   // Each part of the sheet that has something to say, in order.
   const sections: { key: string; label: string; body: ReactNode }[] = [
@@ -274,12 +285,12 @@ export default function EntryScreen() {
 
             <View style={styles.heroBody}>
               <View style={styles.heroText}>
-                <Text variant="display" accessibilityRole="header" numberOfLines={3}>
+                <Text variant="display" color="heroText" accessibilityRole="header" numberOfLines={3}>
                   {entry.name}
                 </Text>
-                {kind ? <Text color="accentPressed">{kind}</Text> : null}
+                {kind ? <Text color="heroTextSecondary">{kind}</Text> : null}
                 {price ? (
-                  <Text variant="heading" style={styles.price}>
+                  <Text variant="heading" color="heroText" style={styles.price}>
                     {price}
                   </Text>
                 ) : null}
@@ -299,17 +310,6 @@ export default function EntryScreen() {
               </Section>
             ))}
 
-            {bare ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={edit}
-                style={({ pressed }) => [styles.addMore, pressed && styles.pressed]}
-              >
-                <Text variant="bodyStrong">{t('entry.details.add')}</Text>
-                <Icon name="plus" size={20} color="textSecondary" />
-              </Pressable>
-            ) : null}
-
             {failure ? (
               <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite" style={styles.failure}>
                 {failure}
@@ -321,7 +321,7 @@ export default function EntryScreen() {
 
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
         <View style={[contentColumn, styles.barInner]}>
-          <Button variant="secondary" label={t('entry.edit')} onPress={edit} style={styles.barButton} />
+          <Button variant="secondary" label={t(bare ? 'entry.details.add' : 'entry.edit')} onPress={edit} style={styles.barButton} />
           <Button label={t('share.action')} loading={deleting} onPress={share} style={styles.barButton} />
         </View>
       </View>
@@ -329,13 +329,13 @@ export default function EntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.sheet,
   },
   hero: {
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xl,
   },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
   },
   drawing: {
-    shadowColor: colors.text,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.16,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     borderCurve: 'continuous',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.sheet,
   },
   sheetInner: {
     paddingTop: OVERHANG - spacing.md,
@@ -427,17 +427,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  addMore: {
-    minHeight: sizes.control,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.control,
-    borderWidth: sizes.hairline,
-    borderColor: colors.borderStrong,
-  },
   failure: {
     marginTop: spacing.lg,
   },
@@ -448,7 +437,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.screen,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.sheet,
     borderTopWidth: sizes.hairline,
     borderTopColor: colors.border,
   },
@@ -459,4 +448,4 @@ const styles = StyleSheet.create({
   barButton: {
     flex: 1,
   },
-});
+}));

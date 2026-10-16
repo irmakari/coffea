@@ -1,6 +1,6 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { CupMark, Icon, Text, type IconName } from '@/components/ui';
 import { startLog } from '@/features/entries/logDraft';
@@ -8,7 +8,7 @@ import { QuickLogPicker } from '@/features/entries/QuickLogPicker';
 import { markQuickLogTipSeen, quickLogTipSeen } from '@/features/entries/quickLogTip';
 import { useTabCup } from '@/features/profile/tabCup';
 import { t, type TranslationKey } from '@/i18n';
-import { colors, contentColumn, radii, sizes, spacing } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
 
 const tabs: Record<string, { icon: IconName; label: TranslationKey }> = {
   index: { icon: 'home', label: 'tabs.home' },
@@ -116,10 +116,12 @@ export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   bar: {
     paddingTop: spacing.md,
-    backgroundColor: colors.surface,
+    // The page's own cream, so the bar reads as the end of the page; the
+    // hairline marks where it starts.
+    backgroundColor: colors.background,
     borderTopWidth: sizes.hairline,
     borderTopColor: colors.border,
   },
@@ -164,4 +166,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     transform: [{ rotate: '45deg' }],
   },
-});
+}));

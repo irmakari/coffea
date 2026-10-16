@@ -15,5 +15,6 @@ export { ModalHeader } from './ModalHeader';
 export { PageHeader } from './PageHeader';
 export { Screen } from './Screen';
 export { ScreenHeader } from './ScreenHeader';
+export { SegmentedControl } from './SegmentedControl';
 export { Text, type TextProps } from './Text';
 export { TextField } from './TextField';

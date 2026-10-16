@@ -62,8 +62,10 @@ export async function fetchAlbumBoard(nameOf: (face: Face) => string): Promise<R
   }));
 }
 
-export async function fetchActivity(): Promise<Activity[]> {
-  const { data, error } = await supabase.rpc('friends_activity', { catalog: catalog(), max_items: 30 });
+// Friends' firsts of the last 30 days, newest first. The server sends at
+// most 100.
+export async function fetchActivity(maxItems = 30): Promise<Activity[]> {
+  const { data, error } = await supabase.rpc('friends_activity', { catalog: catalog(), max_items: maxItems });
   if (error) throw error;
   const rows = await withFaces(
     (data ?? []) as (FaceRow & { coffee_type: string; collected_at: string; collected: number })[],

@@ -1,10 +1,11 @@
-import { ActivityIndicator, Pressable, StyleSheet, type PressableProps, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, type PressableProps, type ViewStyle } from 'react-native';
 
-import { colors, radii, sizes, spacing, type ColorName } from '@/theme';
+import { type ColorName, colors, radii, sizes, spacing, themed } from '@/theme';
 
 import { Text } from './Text';
 
-type ButtonVariant = 'primary' | 'secondary' | 'quiet';
+// `hero` is the primary action on the home page's opening block.
+type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'hero';
 
 type ButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   label: string;
@@ -17,6 +18,7 @@ const labelColor: Record<ButtonVariant, ColorName> = {
   primary: 'textOnAccent',
   secondary: 'text',
   quiet: 'textSecondary',
+  hero: 'heroActionText',
 };
 
 // Buttons fill the width of their container. Wrap one in a row or give it
@@ -49,7 +51,7 @@ export function Button({ label, variant = 'primary', loading = false, disabled, 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   base: {
     minHeight: sizes.control,
     paddingHorizontal: spacing.xl,
@@ -68,12 +70,15 @@ const styles = StyleSheet.create({
     minHeight: sizes.touch,
     paddingHorizontal: spacing.lg,
   },
+  hero: {
+    backgroundColor: colors.heroAction,
+  },
   disabled: {
     opacity: 0.35,
   },
-});
+}));
 
-const pressedStyles = StyleSheet.create({
+const pressedStyles = themed(() => ({
   primary: {
     backgroundColor: colors.accentPressed,
   },
@@ -83,4 +88,7 @@ const pressedStyles = StyleSheet.create({
   quiet: {
     opacity: 0.6,
   },
-});
+  hero: {
+    opacity: 0.85,
+  },
+}));

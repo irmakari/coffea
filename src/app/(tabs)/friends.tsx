@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, Icon, IconButton, ScreenHeader, Text } from '@/components/ui';
@@ -12,7 +12,7 @@ import { FriendsBoard } from '@/features/leaderboard/FriendsBoard';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { formatNumber, t } from '@/i18n';
-import { colors, contentColumn, radii, spacing } from '@/theme';
+import { colors, contentColumn, radii, spacing, themed } from '@/theme';
 
 export default function FriendsScreen() {
   const { session } = useAuth();
@@ -103,7 +103,7 @@ export default function FriendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -154,4 +154,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-});
+}));

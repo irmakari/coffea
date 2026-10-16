@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Chip, CupMark, SectionHeader, Text, TextField } from '@/components/ui';
 import { t } from '@/i18n';
-import { colors, contentColumn, radii, sizes, spacing } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
 
 import { moreCoffees } from './moreCoffees';
 
@@ -101,7 +101,7 @@ function Sheet({ value, onDone }: Omit<MoreCoffeesSheetProps, 'visible'>) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -148,4 +148,4 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-});
+}));

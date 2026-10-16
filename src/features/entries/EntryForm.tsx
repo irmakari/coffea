@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Icon, KeyboardAvoider, Text, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { currencies } from '@/features/profile/currencies';
-import { t } from '@/i18n';
-import { colors, sizes, spacing } from '@/theme';
+import { currencyLabel, t } from '@/i18n';
+import { colors, sizes, spacing, themed } from '@/theme';
 
 import { DateField } from './DateField';
 import { useEntries } from './EntriesProvider';
+import { hiddenCafes, hideCafe } from './hiddenCafes';
 import { MoreCoffeesSheet } from './MoreCoffeesSheet';
 import { PhotoField } from './PhotoField';
 import { cancelUpload, isLocalPhoto, startUpload } from './photoStorage';
@@ -23,6 +24,7 @@ import {
   takesMilk,
   takesShots,
   takesSize,
+  takesTemperature,
   temperatures,
   venues,
   type EntryDraft,
@@ -48,11 +50,12 @@ const CAFE_SUGGESTIONS = 6;
 
 // Cafés from the journal, most recently visited first, written as they were
 // first saved. Coffee at home is said with "Where" instead.
-function cafeSuggestions(cafes: (string | null)[], typed: string): string[] {
+function cafeSuggestions(cafes: (string | null)[], typed: string, hidden: Set<string>): string[] {
   const seen = new Map<string, string>();
   for (const cafe of cafes) {
     const label = cafe?.trim();
-    if (label && !seen.has(label.toLowerCase())) seen.set(label.toLowerCase(), label);
+    const key = label?.toLowerCase();
+    if (label && key && !hidden.has(key) && !seen.has(key)) seen.set(key, label);
   }
   const query = typed.trim().toLowerCase();
   return [...seen.entries()]
@@ -161,7 +164,20 @@ export function EntryForm({
     draft.type === 'other' ? draft.customType : draft.type ? t(`coffeeTypes.${draft.type}`) : '';
   const name = draft.name.trim() || typeName;
   const cafes = useMemo(() => entries.map((entry) => entry.cafe), [entries]);
-  const suggestions = cafeSuggestions(cafes, draft.cafe);
+  const [hidden, setHidden] = useState(hiddenCafes);
+  const suggestions = cafeSuggestions(cafes, draft.cafe, hidden);
+  const askToHide = (cafe: string) =>
+    Alert.alert(t('entry.cafe.hideTitle', { cafe }), t('entry.cafe.hideBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('entry.cafe.hideConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          hideCafe(cafe);
+          setHidden(hiddenCafes());
+        },
+      },
+    ]);
   const priceInvalid = Number.isNaN(parsePrice(draft.price));
   const canSave = name !== '' && !priceInvalid;
 
@@ -273,13 +289,15 @@ export function EntryForm({
                 onChange={(shots) => update({ shots })}
               />
             ) : null}
-            <ChoiceGroup
-              label={t('entry.temperature.label')}
-              options={temperatures}
-              value={draft.temperature}
-              labelOf={(temperature) => t(`entry.temperature.${temperature}`)}
-              onChange={(temperature) => update({ temperature })}
-            />
+            {takesTemperature(draft.type) ? (
+              <ChoiceGroup
+                label={t('entry.temperature.label')}
+                options={temperatures}
+                value={draft.temperature}
+                labelOf={(temperature) => t(`entry.temperature.${temperature}`)}
+                onChange={(temperature) => update({ temperature })}
+              />
+            ) : null}
             <ChoiceGroup
               label={t('entry.venue.label')}
               options={venues}
@@ -296,10 +314,22 @@ export function EntryForm({
               maxLength={80}
             />
             {suggestions.length > 0 ? (
-              <View style={styles.chips}>
-                {suggestions.map((cafe) => (
-                  <Chip key={cafe} label={cafe} selected={false} onPress={() => update({ cafe })} />
-                ))}
+              <View style={styles.suggestions}>
+                <View style={styles.chips}>
+                  {suggestions.map((cafe) => (
+                    <Chip
+                      key={cafe}
+                      label={cafe}
+                      selected={false}
+                      onPress={() => update({ cafe })}
+                      onLongPress={() => askToHide(cafe)}
+                      accessibilityHint={t('entry.cafe.hideHint')}
+                    />
+                  ))}
+                </View>
+                <Text variant="caption" color="textMuted">
+                  {t('entry.cafe.suggestionHint')}
+                </Text>
               </View>
             ) : null}
             <View style={styles.group}>
@@ -314,7 +344,7 @@ export function EntryForm({
               value={draft.price}
               onChangeText={(price) => update({ price })}
               error={priceInvalid ? t('entry.price.invalid') : undefined}
-              suffix={draft.currency}
+              suffix={currencyLabel(draft.currency)}
               suffixLabel={`${t('entry.price.currency')}, ${draft.currency}`}
               onSuffixPress={() => setCurrencyOpen((open) => !open)}
               keyboardType="decimal-pad"
@@ -326,7 +356,7 @@ export function EntryForm({
                 {currencies.map((code) => (
                   <Chip
                     key={code}
-                    label={code}
+                    label={currencyLabel(code)}
                     selected={draft.currency === code}
                     onPress={() => {
                       update({ currency: code });
@@ -352,6 +382,11 @@ export function EntryForm({
           {error ? (
             <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
               {error}
+            </Text>
+          ) : null}
+          {name === '' ? (
+            <Text variant="small" color="textSecondary" align="center">
+              {t('entry.saveHint')}
             </Text>
           ) : null}
           <Button
@@ -381,7 +416,7 @@ export function EntryForm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
@@ -393,6 +428,9 @@ const styles = StyleSheet.create({
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  suggestions: {
     gap: spacing.sm,
   },
   disclosure: {
@@ -410,4 +448,4 @@ const styles = StyleSheet.create({
   footer: {
     gap: spacing.sm,
   },
-});
+}));

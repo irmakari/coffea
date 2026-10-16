@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { CoffeePhoto, CupMark, Icon, Text } from '@/components/ui';
 import { t, type TranslationKey } from '@/i18n';
-import { colors, photoRatio, radii, sizes, spacing } from '@/theme';
+import { colors, photoRatio, radii, sizes, spacing, themed, withAlpha } from '@/theme';
 
 import { askPhotoSource } from './askPhotoSource';
 import { CameraDeniedError, pickPhoto, type PhotoSource } from './pickPhoto';
@@ -66,6 +66,15 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
               <CoffeePhoto uri={uri} ratio="landscape" />
             )}
           </Pressable>
+          {/* While the sticker is being cut out; it takes the photo's place when ready. */}
+          {sticker === undefined ? (
+            <View pointerEvents="none" accessibilityLiveRegion="polite" style={styles.making}>
+              <ActivityIndicator size="small" color={colors.textOnAccent} />
+              <Text variant="caption" color="textOnAccent">
+                {t('entry.photo.makingSticker')}
+              </Text>
+            </View>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('entry.photo.remove')}
@@ -111,7 +120,7 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   container: {
     gap: spacing.sm,
   },
@@ -149,6 +158,18 @@ const styles = StyleSheet.create({
   busy: {
     opacity: 0.6,
   },
+  making: {
+    position: 'absolute',
+    left: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: withAlpha(colors.accent, 0.85),
+  },
   remove: {
     position: 'absolute',
     top: spacing.md,
@@ -162,4 +183,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

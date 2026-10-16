@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Icon, PageHeader, Screen, Text } from '@/components/ui';
 import { currencies } from '@/features/profile/currencies';
 import { useProfile } from '@/features/profile/ProfileProvider';
-import { t } from '@/i18n';
-import { colors, sizes, spacing } from '@/theme';
+import { currencyLabel, t } from '@/i18n';
+import { colors, sizes, spacing, themed } from '@/theme';
 
 export default function CurrencyScreen() {
   const { profile, setPreferredCurrency } = useProfile();
@@ -44,7 +44,7 @@ export default function CurrencyScreen() {
               <View style={styles.rowText}>
                 <Text variant={selected ? 'bodyStrong' : 'body'}>{t(`currencies.${code}`)}</Text>
                 <Text variant="caption" color="textMuted">
-                  {code}
+                  {currencyLabel(code)}
                 </Text>
               </View>
               {selected ? <Icon name="check" size={20} /> : null}
@@ -56,7 +56,7 @@ export default function CurrencyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   failure: {
     marginTop: spacing.lg,
   },
@@ -80,4 +80,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.6,
   },
-});
+}));

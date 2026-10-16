@@ -1,10 +1,10 @@
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 
 import { CupMark, PageHeader, Screen, Text } from '@/components/ui';
 import { coffeeTypes, isCoffeeType } from '@/features/entries/types';
 import { setTabCup, useTabCup } from '@/features/profile/tabCup';
 import { t } from '@/i18n';
-import { colors, contentColumn, radii, spacing } from '@/theme';
+import { colors, contentColumn, radii, spacing, themed } from '@/theme';
 
 const COLUMNS = 3;
 
@@ -65,7 +65,7 @@ export default function CupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   preview: {
     alignItems: 'center',
     marginTop: spacing.xl,
@@ -100,4 +100,4 @@ const styles = StyleSheet.create({
   tileSelected: {
     borderColor: colors.accent,
   },
-});
+}));

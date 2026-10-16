@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackButton, Button, Icon, Text } from '@/components/ui';
@@ -11,7 +11,7 @@ import { normalizeUsername } from '@/features/friends/username';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
 import { successFeedback } from '@/lib/haptics';
-import { colors, contentColumn, radii, sizes, spacing, typography } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing, themed, typography } from '@/theme';
 
 // Long enough that a search is not sent for every letter typed.
 const SEARCH_DELAY_MS = 300;
@@ -171,7 +171,7 @@ export default function AddFriendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -218,4 +218,4 @@ const styles = StyleSheet.create({
     borderTopWidth: sizes.hairline,
     borderTopColor: colors.border,
   },
-});
+}));

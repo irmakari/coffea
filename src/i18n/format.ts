@@ -31,6 +31,27 @@ export function formatNumber(value: number): string {
 // Currencies the English locale would otherwise print as a bare code.
 const symbols: Record<string, string> = { TRY: '₺' };
 
+// "₺", "$", "€": the mark a price is written with, else the code itself.
+export function currencySymbol(currency: string): string {
+  if (symbols[currency]) return symbols[currency];
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(0);
+    return parts.find((part) => part.type === 'currency')?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}
+
+// "₺ TRY", or just the code when it has no mark of its own.
+export function currencyLabel(currency: string): string {
+  const symbol = currencySymbol(currency);
+  return symbol === currency ? currency : `${symbol} ${currency}`;
+}
+
 export function formatCurrency(amount: number, currency: string): string {
   const symbol = symbols[currency];
   if (symbol) {

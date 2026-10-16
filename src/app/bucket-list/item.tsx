@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDiscardGuard } from '@/components/navigation/useDiscardGuard';
@@ -8,7 +8,7 @@ import { Button, EmptyState, KeyboardAvoider, LoadingState, ModalHeader, Screen,
 import { emptyBucketDraft, type BucketDraft, type BucketItem } from '@/features/bucketList/bucketListApi';
 import { useBucketList } from '@/features/bucketList/BucketListProvider';
 import { t } from '@/i18n';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, themed } from '@/theme';
 
 // One screen for both adding (no `id`) and editing a bucket-list item.
 export default function BucketItemScreen() {
@@ -145,7 +145,7 @@ function BucketItemForm({ existing }: { existing?: BucketItem }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
@@ -158,4 +158,4 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.background,
   },
-});
+}));

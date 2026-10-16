@@ -1,11 +1,11 @@
 import { Link, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { t } from '@/i18n';
-import { colors, contentColumn, sizes, spacing } from '@/theme';
+import { colors, contentColumn, sizes, spacing, themed } from '@/theme';
 
 type AuthScreenProps = {
   title: string;
@@ -53,7 +53,7 @@ export function AuthScreen({ title, subtitle, children, footer }: AuthScreenProp
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -90,4 +90,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textDecorationLine: 'underline',
   },
-});
+}));

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, PageHeader, Screen, Text } from '@/components/ui';
@@ -10,7 +10,7 @@ import { YearCard } from '@/features/share/YearCard';
 import { totalCaffeine } from '@/features/stats/caffeine';
 import { computeStats, entriesInPeriod } from '@/features/stats/stats';
 import { t } from '@/i18n';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, themed } from '@/theme';
 
 // This calendar year so far, as a story card to share.
 export default function YearScreen() {
@@ -86,7 +86,7 @@ export default function YearScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   header: {
     paddingHorizontal: spacing.screen,
   },
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   cardShadow: {
     backgroundColor: colors.background,
-    shadowColor: colors.text,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.14,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -108,4 +108,4 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     gap: spacing.sm,
   },
-});
+}));

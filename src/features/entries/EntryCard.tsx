@@ -1,12 +1,12 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { CoffeePhoto, Icon, Text } from '@/components/ui';
 import { formatDate, t } from '@/i18n';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { colors, radii, sizes, spacing, themed, withAlpha } from '@/theme';
 
-import { typeAndCafe, typeLabel } from './display';
+import { typeAndCafe } from './display';
 import { useSticker } from './sticker';
 import type { Entry } from './types';
 
@@ -41,14 +41,6 @@ function when(iso: string, now = new Date()) {
   return formatDate(at, 'dayShort');
 }
 
-// The type and café under the name, without repeating a name that is only
-// the type ("Turkish Coffee / Turkish Coffee").
-function detailLine(entry: Entry) {
-  const type = typeLabel(entry);
-  if (type && type.trim().toLowerCase() === entry.name.trim().toLowerCase()) return entry.cafe;
-  return typeAndCafe(entry);
-}
-
 // What leads the card, in a square on its left: the sticker on tan, else
 // the photo, else the drawing of the drink.
 function Visual({ entry }: { entry: Entry }) {
@@ -74,14 +66,15 @@ function Visual({ entry }: { entry: Entry }) {
 }
 
 // The large card, laid on its side: the coffee on the left, its name, where
-// it was had and when on the right.
-export function EntryCard({ entry }: { entry: Entry }) {
-  const detail = detailLine(entry);
+// it was had and when on the right. `flat` lays it straight on the page over
+// a hairline, like the rows of a plain list.
+export function EntryCard({ entry, flat = false }: { entry: Entry; flat?: boolean }) {
+  const detail = typeAndCafe(entry);
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => openEntry(entry)}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, flat && styles.cardFlat, pressed && styles.pressed]}
     >
       {entry.photoUrl || entry.type ? <Visual entry={entry} /> : null}
       <View style={styles.cardText}>
@@ -137,8 +130,9 @@ export function EntryTile({ entry }: { entry: Entry }) {
   );
 }
 
-// A compact line for lists inside a card, with a small thumbnail.
-export function EntryRow({ entry, last = false }: { entry: Entry; last?: boolean }) {
+// A compact line for lists inside a card, with a small thumbnail. `rating`
+// adds the stars under the date, for lists ordered by them.
+export function EntryRow({ entry, last = false, rating = false }: { entry: Entry; last?: boolean; rating?: boolean }) {
   const subtitle = typeAndCafe(entry);
   return (
     <Pressable
@@ -157,14 +151,17 @@ export function EntryRow({ entry, last = false }: { entry: Entry; last?: boolean
           </Text>
         ) : null}
       </View>
-      <Text variant="caption" color="textMuted">
-        {formatDate(entry.consumedAt, 'dayShort')}
-      </Text>
+      <View style={styles.rowEnd}>
+        <Text variant="caption" color="textMuted">
+          {formatDate(entry.consumedAt, 'dayShort')}
+        </Text>
+        {rating && entry.rating ? <Rating value={entry.rating} /> : null}
+      </View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   pressed: {
     opacity: 0.7,
   },
@@ -178,6 +175,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderCurve: 'continuous',
     backgroundColor: colors.surface,
+  },
+  cardFlat: {
+    paddingHorizontal: 0,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderBottomWidth: sizes.hairline,
+    borderBottomColor: colors.border,
   },
   cardVisual: {
     width: 88,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(255, 252, 248, 0.85)',
+    backgroundColor: withAlpha(colors.surface, 0.85),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -261,4 +265,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-});
+  rowEnd: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+}));

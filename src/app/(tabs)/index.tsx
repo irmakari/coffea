@@ -1,12 +1,12 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,9 +30,19 @@ import {
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
+import { StreakCard } from "@/features/stats/StreakCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
+import { useHeroStatusBar } from "@/features/theme/theme";
 import { formatDate, formatNumber, t, type TranslationKey } from "@/i18n";
-import { colors, contentColumn, radii, spacing } from "@/theme";
+import {
+  colors,
+  contentColumn,
+  isDarkHero,
+  isDarkTheme,
+  radii,
+  spacing,
+  themed,
+} from "@/theme";
 
 const EARLIER_COUNT = 3;
 const FAVORITES_COUNT = 8;
@@ -57,19 +67,23 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
       <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
         <View style={contentColumn}>
           <View style={styles.masthead}>
-            <Text variant="subheading">{t("brand.name")}</Text>
+            <Text variant="subheading" color="heroText">
+              {t("brand.name")}
+            </Text>
             {/* iOS would spin behind the status bar, which the hero runs
                 under, so the hero shows the reload itself. */}
             {refreshing && Platform.OS === "ios" ? (
-              <ActivityIndicator size="small" color={colors.accentPressed} />
+              <ActivityIndicator size="small" color={colors.heroTextSecondary} />
             ) : (
-              <Text variant="caption">{formatDate(now, "day")}</Text>
+              <Text variant="caption" color="heroText">
+                {formatDate(now, "day")}
+              </Text>
             )}
           </View>
 
           <View style={styles.heroBody}>
             <View style={styles.heroText}>
-              <Text variant="display" accessibilityRole="header">
+              <Text variant="display" color="heroText" accessibilityRole="header">
                 {profile.displayName
                   ? t("home.greetingWithName", {
                       greeting,
@@ -89,6 +103,7 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
           </View>
 
           <Button
+            variant="hero"
             label={t("home.logAction")}
             onPress={() => router.push("/log")}
             style={styles.heroAction}
@@ -116,7 +131,7 @@ function AlbumCard() {
       onPress={open}
       style={({ pressed }) => pressed && styles.pressed}
     >
-      <Card style={styles.albumCard}>
+      <Card outline style={styles.albumCard}>
         <View style={styles.albumText}>
           <Text variant="subheading">{t("album.home.title")}</Text>
           <Text variant="small" color="textSecondary">
@@ -147,6 +162,19 @@ export default function HomeScreen() {
   const { entries, status, reload } = useEntries();
   const [refreshing, setRefreshing] = useState(false);
 
+  useHeroStatusBar();
+
+  // Once the hero has scrolled away, the strip behind the clock takes the
+  // page's colour, so no band of tan is left floating over the list.
+  const heroHeight = useRef(0);
+  const [pastHero, setPastHero] = useState(false);
+  const onScroll = (y: number) => {
+    const past = heroHeight.current > 0 && y > heroHeight.current - insets.top;
+    if (past === pastHero) return;
+    setPastHero(past);
+    if (isDarkHero()) setStatusBarStyle(past && !isDarkTheme() ? "dark" : "light");
+  };
+
   const refresh = async () => {
     setRefreshing(true);
     await reload();
@@ -169,6 +197,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         // The hero is tan to the very top, behind the status bar.
         contentInsetAdjustmentBehavior="never"
+        onScroll={(event) => onScroll(event.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={32}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -182,7 +212,13 @@ export default function HomeScreen() {
           />
         }
       >
-        <Hero count={entries.length} refreshing={refreshing} />
+        <View
+          onLayout={(event) => {
+            heroHeight.current = event.nativeEvent.layout.height;
+          }}
+        >
+          <Hero count={entries.length} refreshing={refreshing} />
+        </View>
 
         {!latest ? (
           <View style={[contentColumn, styles.body]}>
@@ -218,8 +254,10 @@ export default function HomeScreen() {
                   onPress: () => router.navigate("/diary"),
                 }}
               />
-              <EntryCard entry={latest} />
+              <EntryCard flat entry={latest} />
             </View>
+
+            <StreakCard entries={entries} />
 
             <AlbumCard />
 
@@ -265,26 +303,18 @@ export default function HomeScreen() {
                     />
                   ))}
                 </View>
-                {rest.length > EARLIER_COUNT ? (
-                  <Button
-                    variant="quiet"
-                    label={t("home.openDiary")}
-                    onPress={() => router.navigate("/diary")}
-                    style={styles.openDiary}
-                  />
-                ) : null}
               </View>
             ) : null}
           </View>
         )}
       </ScrollView>
       {/* Keeps the clock and battery readable once content scrolls beneath them. */}
-      <View style={[styles.statusBar, { height: insets.top }]} />
+      <View style={[styles.statusBar, pastHero && styles.statusBarPage, { height: insets.top }]} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: {
     flex: 1,
     backgroundColor: colors.background,
@@ -294,7 +324,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
+  },
+  statusBarPage: {
+    backgroundColor: colors.background,
   },
   backdrop: {
     position: "absolute",
@@ -302,7 +335,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: "50%",
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
   },
   content: {
     flexGrow: 1,
@@ -313,7 +346,7 @@ const styles = StyleSheet.create({
   hero: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xl,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.hero,
     borderBottomLeftRadius: radii.frame + 6,
     borderBottomRightRadius: radii.frame + 6,
   },
@@ -335,7 +368,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroLine: {
-    color: colors.accentPressed,
+    color: colors.heroTextSecondary,
   },
   heroAction: {
     marginTop: spacing.xl,
@@ -383,7 +416,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-  openDiary: {
-    marginTop: spacing.xs,
-  },
-});
+}));
