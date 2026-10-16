@@ -251,8 +251,11 @@ export const en = {
     },
     confirm: {
       title: 'Check your inbox',
-      body: 'We sent a confirmation link to {{email}}. Open it, then come back and sign in.',
-      action: 'Go to sign in',
+      body: 'Enter the code we sent to {{email}} to finish setting up your account.',
+      submit: 'Confirm',
+      resend: 'Send a new code',
+      resent: 'A new code is on its way.',
+      back: 'Back to sign in',
     },
     reset: {
       link: 'Forgot your password?',
@@ -274,7 +277,7 @@ export const en = {
       codeExpired: 'That code is wrong or has expired. Ask for a new one.',
       samePassword: 'Choose a password you have not used here before.',
       invalidCredentials: 'That email and password do not match.',
-      emailNotConfirmed: 'Confirm your email first. The link is in your inbox.',
+      emailNotConfirmed: 'Confirm your email first. The code is in your inbox.',
       emailInUse: 'An account with this email already exists.',
       weakPassword: 'Choose a stronger password.',
       invalidEmail: 'That email address does not look right.',

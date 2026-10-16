@@ -55,6 +55,18 @@ export async function signUp(
   return { ok: true, value: { needsEmailConfirmation: data.session === null } };
 }
 
+// A new account is confirmed with a code from its email rather than a link,
+// so no browser is needed. A right code signs the user in.
+export async function verifySignUpCode(email: string, code: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'signup' });
+  return error ? { ok: false, message: describe(error) } : { ok: true, value: undefined };
+}
+
+export async function resendSignUpCode(email: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+  return error ? { ok: false, message: describe(error) } : { ok: true, value: undefined };
+}
+
 // Emails a one-time code. Succeeds even when no account uses the address,
 // so the screen never reveals who has an account.
 export async function requestPasswordReset(email: string): Promise<AuthResult> {

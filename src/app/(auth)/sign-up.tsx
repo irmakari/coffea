@@ -4,6 +4,7 @@ import type { TextInput } from 'react-native';
 
 import { Button, Text, TextField } from '@/components/ui';
 import { AuthScreen } from '@/features/auth/AuthScreen';
+import { ConfirmEmail } from '@/features/auth/ConfirmEmail';
 import { isValidEmail, MIN_PASSWORD_LENGTH, signUp } from '@/features/auth/authApi';
 import { PasswordField } from '@/features/auth/PasswordField';
 import { t } from '@/i18n';
@@ -43,11 +44,7 @@ export default function SignUpScreen() {
   };
 
   if (awaitingConfirmation) {
-    return (
-      <AuthScreen title={t('auth.confirm.title')} subtitle={t('auth.confirm.body', { email: email.trim() })}>
-        <Button label={t('auth.confirm.action')} onPress={() => router.replace('/sign-in')} />
-      </AuthScreen>
-    );
+    return <ConfirmEmail email={email} onBack={() => router.replace('/sign-in')} />;
   }
 
   return (
