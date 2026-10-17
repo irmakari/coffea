@@ -28,7 +28,7 @@ import { useHeroStatusBar } from '@/features/theme/theme';
 import { caffeineOf } from '@/features/stats/caffeine';
 import { formatCurrency, formatDate, formatNumber, t } from '@/i18n';
 import { tapFeedback } from '@/lib/haptics';
-import { colors, contentColumn, sizes, spacing, themed } from '@/theme';
+import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
 
 const VISUAL = 156;
 // How far the coffee reaches down over the white sheet.
@@ -305,6 +305,23 @@ export default function EntryScreen() {
 
         <View style={styles.sheet}>
           <View style={[contentColumn, styles.sheetInner]}>
+            {/* A Turkish coffee leaves grounds to read. */}
+            {entry.type === 'turkish' ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: '/fortune/[id]', params: { id: entry.id } })}
+                style={({ pressed }) => [styles.fortune, pressed && styles.pressed]}
+              >
+                <CupMark drink="turkish" size={52} />
+                <View style={styles.fortuneText}>
+                  <Text variant="subheading">{t('fortune.entry.title')}</Text>
+                  <Text variant="small" color="textSecondary">
+                    {t('fortune.entry.body')}
+                  </Text>
+                </View>
+                <Icon name="chevronRight" size={18} color="textMuted" />
+              </Pressable>
+            ) : null}
             {sections.map((section, index) => (
               <Section key={section.key} label={section.label} last={index === sections.length - 1}>
                 {section.body}
@@ -331,6 +348,20 @@ export default function EntryScreen() {
 }
 
 const styles = themed(() => ({
+  fortune: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: radii.frame,
+    backgroundColor: colors.surface,
+  },
+  fortuneText: {
+    flex: 1,
+    gap: 2,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.sheet,

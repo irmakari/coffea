@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 
-import { Card, CupMark, Text } from '@/components/ui';
+import { Card, CupMark, RollingNumber, Text } from '@/components/ui';
 import { useSticker } from '@/features/entries/sticker';
 import type { Entry } from '@/features/entries/types';
 import { formatDate, formatNumber, t } from '@/i18n';
@@ -56,7 +56,10 @@ export function StreakCard({ entries }: { entries: Entry[] }) {
         <Text variant="label" color="textSecondary">
           {t('stats.streak.title')}
         </Text>
-        <Text variant="heading">{streak.current > 0 ? plural('days', streak.current) : t('stats.streak.days.none')}</Text>
+        <RollingNumber
+          variant="heading"
+          value={streak.current > 0 ? plural('days', streak.current) : t('stats.streak.days.none')}
+        />
         <Text variant="small" color="textSecondary">
           {note}
         </Text>

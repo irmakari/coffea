@@ -38,7 +38,19 @@ const ink = {
   coldBrewSurface: '#4A2E22',
   matcha: '#8DA65B',
   matchaFoam: '#DCE5BE',
+  tea: '#A2421C',
+  teaGlow: '#C9672F',
+  greenTea: '#B3A548',
+  herbalTea: '#C98A3C',
 } as const;
+
+// Tea seen from above: clear amber with the light caught at its edge.
+const teaShine = (
+  <>
+    <Circle cx={60} cy={60} r={22} fill="none" stroke={ink.teaGlow} strokeWidth={6} strokeOpacity={0.55} />
+    <Path d="M49 53a13 13 0 0 1 9-8" fill="none" stroke="#F3D3A8" strokeWidth={2.5} strokeLinecap="round" />
+  </>
+);
 
 const heart = (
   <Path
@@ -166,6 +178,9 @@ const drinks: Record<string, Drink> = {
   coldBrew: { scene: icedCup('cold-brew', ink.coldBrew, ink.coldBrewDepth, ink.coldBrewSurface, palette.espresso) },
   icedLatte: { scene: icedCup('iced-latte', ink.icedLatte, ink.foam, ink.icedLatteSurface, ink.cremaEdge) },
   filter: { vessel: 'mug', liquid: '#4A2E22', art: shine },
+  tea: { vessel: 'demitasse', liquid: ink.tea, art: teaShine },
+  greenTea: { vessel: 'cup', liquid: ink.greenTea, art: shine },
+  herbalTea: { vessel: 'cup', liquid: ink.herbalTea, art: shine },
   matcha: {
     vessel: 'cup',
     liquid: ink.matcha,
@@ -185,7 +200,12 @@ const drinks: Record<string, Drink> = {
 // the words in its name. The first match wins, so iced comes before the
 // drinks that can also be served iced.
 const lookalikes: [RegExp, string][] = [
+  [/ice.*matcha/, 'icedLatte'],
   [/matcha/, 'matcha'],
+  [/green tea|ye[sş]il [cç]ay/, 'greenTea'],
+  [/herbal|bitki|chamomile|papatya|ihlamur|mint|nane/, 'herbalTea'],
+  // Iced tea is drawn with the iced drinks below.
+  [/^(?!.*ice).*(\btea\b|[cç]ay|earl grey)/, 'tea'],
   [/cold brew|nitro|tonic|ice[d ]+americano/, 'coldBrew'],
   [/\bice|shaken|frapp|cold/, 'icedLatte'],
   [/t[uü]rk/, 'turkish'],
@@ -206,6 +226,13 @@ function drawingFor(drink: string | null | undefined): Drink {
 }
 
 const plain = { vessel: 'cup', liquid: palette.espresso, art: shine } satisfies Drink;
+
+// Whether the drink is drawn in a clear iced cup from the side, rather than a
+// cup from above.
+export function isIcedDrawing(drink: string | null | undefined): boolean {
+  const chosen = drawingFor(drink);
+  return chosen === drinks.coldBrew || chosen === drinks.icedLatte;
+}
 
 function Saucer({ r, tan = false }: { r: number; tan?: boolean }) {
   return tan ? (

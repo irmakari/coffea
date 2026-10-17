@@ -1,15 +1,23 @@
 import type { MaterialTopTabNavigationEventMap } from 'expo-router/js-top-tabs';
 import type { NavigationHelpers, ParamListBase, TabNavigationState } from 'expo-router/react-navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CupMark, Icon, Text, type IconName } from '@/components/ui';
+import { coffeeName } from '@/features/album/FriendsAlbum';
+import { DrinkArc, pointedAt } from '@/features/entries/DrinkArc';
+import { useEntries } from '@/features/entries/EntriesProvider';
 import { startLog } from '@/features/entries/logDraft';
+import { coffeeTypes } from '@/features/entries/types';
 import { QuickLogPicker } from '@/features/entries/QuickLogPicker';
 import { markQuickLogTipSeen, quickLogTipSeen } from '@/features/entries/quickLogTip';
 import { useTabCup } from '@/features/profile/tabCup';
 import { t, type TranslationKey } from '@/i18n';
+import { tapFeedback } from '@/lib/haptics';
 import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
 
 const tabs: Record<string, { icon: IconName; label: TranslationKey }> = {
@@ -22,6 +30,23 @@ const tabs: Record<string, { icon: IconName; label: TranslationKey }> = {
 // Logging is the one thing the app is for, so its tab sits in the middle of
 // the bar as the app's cup instead of an icon and a label.
 const LOG_ROUTE = 'log';
+
+// How many drinks fan out over the cup when it is held and dragged.
+const ARC_DRINKS = 7;
+
+// The drinks most logged, then the usual ones, for the arc over the cup.
+function useArcDrinks() {
+  const { entries } = useEntries();
+  return useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of entries) {
+      if (entry.type && entry.type !== 'other') counts.set(entry.type, (counts.get(entry.type) ?? 0) + 1);
+    }
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([type]) => type);
+    const usual = coffeeTypes.filter((type) => type !== 'other' && !ranked.includes(type));
+    return [...ranked, ...usual].slice(0, ARC_DRINKS);
+  }, [entries]);
+}
 
 // How far the tip's tail shows below its bubble.
 const TIP_TAIL = 5;
@@ -45,6 +70,65 @@ export function TabBar({ state, navigation }: TabBarProps) {
     markQuickLogTipSeen();
   };
   const onLog = state.routes[state.index]?.name === LOG_ROUTE;
+
+  // Holding the cup fans the drinks out over it. Dragging onto one and
+  // letting go starts a log of it; letting go without dragging opens the
+  // full list, as a plain long press always has.
+  const drinks = useArcDrinks();
+  const arcOpen = useSharedValue(0);
+  const pointed = useSharedValue(-1);
+  const travelled = useSharedValue(0);
+  const [label, setLabel] = useState<string | null>(null);
+  const point = (index: number) => {
+    setLabel(index >= 0 ? coffeeName(drinks[index]) : null);
+    if (index >= 0) tapFeedback();
+  };
+  const hold = () => {
+    dismissTip();
+    tapFeedback();
+  };
+  const release = (index: number, moved: number) => {
+    setLabel(null);
+    if (index >= 0) startLog({ drink: drinks[index] });
+    else if (moved < 24) setPicking(true);
+  };
+  const logRoute = state.routes.find((route) => route.name === LOG_ROUTE);
+  const openLog = () => {
+    dismissTip();
+    if (!logRoute) return;
+    const event = navigation.emit({ type: 'tabPress', target: logRoute.key, canPreventDefault: true });
+    if (!onLog && !event.defaultPrevented) navigation.navigate(logRoute.name, logRoute.params);
+  };
+  const cupGesture = Gesture.Exclusive(
+    Gesture.Pan()
+      .activateAfterLongPress(280)
+      .onStart(() => {
+        pointed.set(-1);
+        travelled.set(0);
+        arcOpen.set(withSpring(1, { damping: 16, stiffness: 180 }));
+        scheduleOnRN(hold);
+      })
+      .onUpdate((event) => {
+        travelled.set(Math.max(travelled.value, Math.hypot(event.translationX, event.translationY)));
+        const index = pointedAt(event.translationX, event.translationY, drinks.length);
+        if (index !== pointed.value) {
+          pointed.set(index);
+          scheduleOnRN(point, index);
+        }
+      })
+      .onEnd(() => {
+        scheduleOnRN(release, pointed.value, travelled.value);
+      })
+      .onFinalize(() => {
+        arcOpen.set(withTiming(0, { duration: 180 }));
+        pointed.set(-1);
+      }),
+    Gesture.Tap()
+      .maxDuration(270)
+      .onEnd(() => {
+        scheduleOnRN(openLog);
+      }),
+  );
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
@@ -72,25 +156,25 @@ export function TabBar({ state, navigation }: TabBarProps) {
 
           if (route.name === LOG_ROUTE) {
             return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                accessibilityLabel={t('tabs.log')}
-                accessibilityHint={t('quickLog.hint')}
-                onPress={() => {
-                  dismissTip();
-                  onPress();
-                }}
-                onLongPress={() => {
-                  dismissTip();
-                  setPicking(true);
-                }}
-                delayLongPress={300}
-                style={({ pressed }) => [styles.item, styles.log, pressed && styles.logPressed]}
-              >
-                <CupMark tan drink={cup} size={54} />
-              </Pressable>
+              <GestureDetector key={route.key} gesture={cupGesture}>
+                <View
+                  accessible
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: focused }}
+                  accessibilityLabel={t('tabs.log')}
+                  accessibilityHint={t('quickLog.hint')}
+                  accessibilityActions={[{ name: 'activate' }, { name: 'longpress' }]}
+                  onAccessibilityAction={(event) => {
+                    dismissTip();
+                    if (event.nativeEvent.actionName === 'longpress') setPicking(true);
+                    else onPress();
+                  }}
+                  style={[styles.item, styles.log]}
+                >
+                  <CupMark tan drink={cup} size={54} />
+                  <DrinkArc drinks={drinks} open={arcOpen} selected={pointed} label={label} />
+                </View>
+              </GestureDetector>
             );
           }
 
@@ -148,9 +232,8 @@ const styles = themed(() => ({
   // The cup is a little taller than a tab; this keeps the bar its height.
   log: {
     marginVertical: -3,
-  },
-  logPressed: {
-    opacity: 0.7,
+    // Above the tabs after it, so the veil of its drink arc covers them too.
+    zIndex: 10,
   },
   // Floats just above the bar, pointing down at the cup.
   tip: {

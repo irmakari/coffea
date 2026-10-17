@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Switch, View } from 'react-native';
 
 import {
   Button,
@@ -22,10 +22,10 @@ import { PersonRow, RowButton } from '@/features/friends/PersonRow';
 import { useProfile } from '@/features/profile/ProfileProvider';
 import { t } from '@/i18n';
 import { successFeedback } from '@/lib/haptics';
-import { spacing, themed } from '@/theme';
+import { colors, spacing, themed } from '@/theme';
 
 export default function FriendsScreen() {
-  const { profile } = useProfile();
+  const { profile, setShareLogs } = useProfile();
   const { friends, incoming, outgoing, status, reload, respond, remove, block } = useFriends();
   // The person whose row is waiting on the server, so its buttons hold still.
   const [busy, setBusy] = useState<string | null>(null);
@@ -170,6 +170,26 @@ export default function FriendsScreen() {
         </>
       )}
 
+      <View style={styles.sharing}>
+        <View style={styles.sharingText}>
+          <Text variant="bodyStrong">{t('friendsLog.share.label')}</Text>
+          <Text variant="small" color="textSecondary">
+            {t(profile.shareLogs ? 'friendsLog.share.on' : 'friendsLog.share.off')}
+          </Text>
+        </View>
+        <Switch
+          accessibilityLabel={t('friendsLog.share.label')}
+          value={profile.shareLogs}
+          onValueChange={(value) => {
+            setFailure(null);
+            setShareLogs(value).catch(() => setFailure(t('friendsLog.share.error')));
+          }}
+          trackColor={{ true: colors.accent, false: colors.border }}
+          thumbColor={colors.surface}
+          ios_backgroundColor={colors.border}
+        />
+      </View>
+
       <View style={styles.footer}>
         <ListRow label={t('friends.blocked.title')} onPress={() => router.push('/friends/blocked')} />
       </View>
@@ -178,6 +198,16 @@ export default function FriendsScreen() {
 }
 
 const styles = themed(() => ({
+  sharing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  sharingText: {
+    flex: 1,
+    gap: 2,
+  },
   invite: {
     marginTop: spacing.lg,
   },

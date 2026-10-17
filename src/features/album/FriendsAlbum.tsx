@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { Avatar, CupMark, SectionHeader, Text } from '@/components/ui';
+import { Avatar, CupMark, Icon, SectionHeader, Text } from '@/components/ui';
 import { isCoffeeType } from '@/features/entries/types';
 import { personName } from '@/features/friends/friendsApi';
 import { t } from '@/i18n';
@@ -28,7 +28,42 @@ export function activityWhen(iso: string, now = new Date()) {
 
 // One friend's first: who, which coffee, when, and its drawing. Opens their
 // page on that coffee, unless it already sits on their page.
-export function ActivityRow({ item, last, onPress }: { item: Activity; last: boolean; onPress?: () => void }) {
+// On the friend's own page (`own`) the row leaves out who: it is them, and
+// the coffee leads instead.
+export function ActivityRow({
+  item,
+  last,
+  onPress,
+  own = false,
+}: {
+  item: Activity;
+  last: boolean;
+  onPress?: () => void;
+  own?: boolean;
+}) {
+  if (own) {
+    return (
+      <Pressable
+        accessibilityRole={onPress ? 'button' : undefined}
+        disabled={!onPress}
+        onPress={onPress}
+        style={({ pressed }) => [styles.item, last && styles.lastItem, pressed && styles.pressed]}
+      >
+        <View style={styles.cup}>
+          <CupMark drink={item.coffee} size={46} />
+        </View>
+        <View style={styles.itemText}>
+          <Text style={styles.strong} numberOfLines={1}>
+            {coffeeName(item.coffee)}
+          </Text>
+          <Text variant="caption" color="textMuted">
+            {activityWhen(item.collectedAt)} · {t('activity.progress', { count: item.collected })}
+          </Text>
+        </View>
+        {onPress ? <Icon name="chevronRight" size={16} color="textMuted" /> : null}
+      </Pressable>
+    );
+  }
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
