@@ -23,7 +23,9 @@ public class CoffeeStickerModule: Module {
     // Both outcomes are kept under `key`, so each photo is worked on once.
     AsyncFunction("stickerAsync") { (source: String, key: String, size: Double) -> String? in
       let file = try self.folder().appendingPathComponent(Self.fileName(key) + ".png")
-      let none = file.appendingPathExtension("none")
+      // Versioned, so photos turned down by an earlier, stricter check are
+      // tried again.
+      let none = file.appendingPathExtension("none2")
       let manager = FileManager.default
       if manager.fileExists(atPath: file.path) { return file.absoluteString }
       if manager.fileExists(atPath: none.path) { return nil }
@@ -59,9 +61,13 @@ public class CoffeeStickerModule: Module {
     else { return .failed }
 
     var sticker = CIImage(cvPixelBuffer: buffer)
-    // A "subject" that fills the frame is the table or the whole scene, not a cup.
-    let covered = (sticker.extent.width * sticker.extent.height) / (image.extent.width * image.extent.height)
-    if covered > 0.85 { return .none }
+    // A "subject" that runs edge to edge both ways is the table or the whole
+    // scene, not a cup. A cup photographed close up from above fills most of
+    // the frame too, but its round edge leaves the corners, so only a cut-out
+    // that reaches all four sides is turned down.
+    let wide = sticker.extent.width / image.extent.width
+    let tall = sticker.extent.height / image.extent.height
+    if wide > 0.97 && tall > 0.97 { return .none }
 
     let scale = min(1, size / max(sticker.extent.width, sticker.extent.height))
     if scale < 1 {

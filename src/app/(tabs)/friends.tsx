@@ -8,6 +8,7 @@ import { ActivityList } from '@/features/album/FriendsAlbum';
 import { useFriendsAlbum } from '@/features/album/useFriendsAlbum';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useFriends } from '@/features/friends/FriendsProvider';
+import { FriendsLogList, useFriendsLog } from '@/features/friends/FriendsLogList';
 import { FriendsBoard } from '@/features/leaderboard/FriendsBoard';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import { useProfile } from '@/features/profile/ProfileProvider';
@@ -21,12 +22,13 @@ export default function FriendsScreen() {
   const { friends, incoming, reload: reloadFriends } = useFriends();
   const board = useLeaderboard(0);
   const album = useFriendsAlbum();
+  const log = useFriendsLog();
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([reloadFriends(), board.reload(), album.reload()]);
+      await Promise.all([reloadFriends(), board.reload(), album.reload(), log.reload()]);
     } finally {
       setRefreshing(false);
     }
@@ -89,7 +91,11 @@ export default function FriendsScreen() {
                 userId={userId}
               />
             ) : null}
-            {album.status === 'ready' ? (
+            {/* Every coffee friends log, once the server offers it; until then
+                only their album firsts. */}
+            {log.status === 'ready' ? (
+              <FriendsLogList groups={log.groups} coffees={log.coffees} />
+            ) : log.status === 'loading' ? null : album.status === 'ready' ? (
               <ActivityList items={album.activity} />
             ) : album.status === 'error' ? (
               <Text variant="small" color="textSecondary">

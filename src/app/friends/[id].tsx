@@ -1,9 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 
 import {
   Avatar,
+  CupMark,
   Button,
   EmptyState,
   IconButton,
@@ -14,7 +16,9 @@ import {
   Text,
 } from '@/components/ui';
 import { albumSlots } from '@/features/album/album';
-import { ActivityRow } from '@/features/album/FriendsAlbum';
+import type { Activity } from '@/features/album/albumFriendsApi';
+import { FriendCoffeeSheet } from '@/features/album/FriendCoffeeSheet';
+import { ActivityRow, coffeeName } from '@/features/album/FriendsAlbum';
 import { openFriendMenu } from '@/features/friends/friendMenu';
 import { personName } from '@/features/friends/friendsApi';
 import { useFriends } from '@/features/friends/FriendsProvider';
@@ -31,6 +35,8 @@ export default function FriendScreen() {
   const { friends, remove, block } = useFriends();
   const page = useFriendPage(id);
   const [failure, setFailure] = useState<string | null>(null);
+  // One of their coffees, opened as a sheet over the page.
+  const [opened, setOpened] = useState<Activity | null>(null);
   const person = friends.find((friend) => friend.id === id);
 
   if (!person) {
@@ -46,7 +52,20 @@ export default function FriendScreen() {
   const handle = person.displayName && person.username ? `@${person.username}` : null;
   const focus = coffee ? page.firsts.find((item) => item.coffee === coffee) : undefined;
   const firsts = focus ? [focus, ...page.firsts.filter((item) => item !== focus)] : page.firsts;
-  const total = albumSlots().length;
+  const slots = albumSlots();
+  const total = slots.length;
+  // Their album as a shelf, in the album's own order.
+  const order = (coffee: string) => slots.findIndex((slot) => slot.value.toLowerCase() === coffee.trim().toLowerCase());
+  const shelf = [...page.collected].sort((a, b) => order(a.coffee) - order(b.coffee));
+  // Which number each coffee was in their album, by when they first had it.
+  const byDate = [...page.collected].sort((a, b) => a.collectedAt.localeCompare(b.collectedAt));
+  const openCoffee = (coffee: string, collectedAt: string) =>
+    setOpened({
+      person,
+      coffee,
+      collectedAt,
+      collected: byDate.findIndex((item) => item.coffee === coffee) + 1 || 1,
+    });
   // Someone off the leaderboard shares no totals, here or anywhere.
   const hidden = !page.week && !page.album;
 
@@ -89,6 +108,35 @@ export default function FriendScreen() {
           ) : null}
         </View>
       </View>
+
+      {page.status === 'ready' && !hidden && shelf.length > 0 ? (
+        <View style={styles.shelfSection}>
+          <View style={styles.shelfHead}>
+            <Text variant="eyebrow" color="textSecondary">
+              {t('friendPage.shelf')}
+            </Text>
+            <Text variant="caption" color="textMuted">
+              {t('friendPage.album.count', { count: formatNumber(shelf.length), total: formatNumber(total) })}
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf} style={styles.shelfScroll}>
+            {shelf.map((item, index) => (
+              <Animated.View key={item.coffee} entering={FadeInRight.delay(index * 60).springify().damping(16)}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => openCoffee(item.coffee, item.collectedAt)}
+                  style={({ pressed }) => [styles.coin, pressed && styles.pressed]}
+                >
+                <CupMark drink={item.coffee} size={60} />
+                <Text variant="caption" color="textSecondary" numberOfLines={2} align="center">
+                  {coffeeName(item.coffee)}
+                </Text>
+                </Pressable>
+              </Animated.View>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {failure ? (
         <Text variant="small" color="danger" accessibilityLiveRegion="polite">
@@ -159,7 +207,13 @@ export default function FriendScreen() {
             ) : (
               <View>
                 {firsts.map((item, index) => (
-                  <ActivityRow key={item.coffee} item={item} last={index === firsts.length - 1} />
+                  <ActivityRow
+                    key={item.coffee}
+                    item={item}
+                    last={index === firsts.length - 1}
+                    own
+                    onPress={() => setOpened(item)}
+                  />
                 ))}
               </View>
             )}
@@ -170,6 +224,8 @@ export default function FriendScreen() {
       <Text variant="small" color="textMuted" style={styles.privacy}>
         {t('friendPage.privacy')}
       </Text>
+
+      <FriendCoffeeSheet friend={person.id} item={opened} onClose={() => setOpened(null)} />
     </Screen>
   );
 }
@@ -187,6 +243,30 @@ const styles = themed(() => ({
   },
   identityText: {
     flex: 1,
+    gap: spacing.xs,
+  },
+  shelfSection: {
+    gap: spacing.md,
+  },
+  shelfHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  // The shelf runs to the screen's edges, past the page's padding.
+  shelfScroll: {
+    marginHorizontal: -spacing.screen,
+  },
+  shelf: {
+    paddingHorizontal: spacing.screen,
+    gap: spacing.md,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  coin: {
+    width: 76,
+    alignItems: 'center',
     gap: spacing.xs,
   },
   cards: {

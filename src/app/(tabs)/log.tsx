@@ -7,10 +7,14 @@ import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { isLogDraftDirty, setLogDraftDirty } from '@/features/entries/logDraft';
 import { askForReviewAfterSaving } from '@/features/entries/reviewPrompt';
-import { emptyDraft, isCoffeeType, type EntryDraft } from '@/features/entries/types';
+import { emptyDraft, isCoffeeType, type Entry, type EntryDraft } from '@/features/entries/types';
 import { useProfile } from '@/features/profile/ProfileProvider';
-import { t } from '@/i18n';
 import { successFeedback } from '@/lib/haptics';
+import { buildAlbum, collectedCount } from '@/features/album/album';
+import { revealNewCard } from '@/features/album/NewCardReveal';
+import { celebrate } from '@/features/celebrate/Celebration';
+import { computeStreak } from '@/features/stats/stats';
+import { formatNumber, t } from '@/i18n';
 import { spacing } from '@/theme';
 
 // A form that already knows what is being drunk, named after it so that it
@@ -30,6 +34,17 @@ function onDay(draft: EntryDraft, day: string): EntryDraft {
   const now = new Date();
   date.setHours(now.getHours(), now.getMinutes(), 0, 0);
   return { ...draft, consumedAt: (date > now ? now : date).toISOString() };
+}
+
+// What saving this coffee did: grew the streak, started one, or added to today.
+function celebrationLine(before: ReturnType<typeof computeStreak>, after: Entry[]): string {
+  const streak = computeStreak(after);
+  if (streak.current > before.current) {
+    return streak.current === 1 ? t('celebrate.streakStart') : t('celebrate.streakUp', { count: formatNumber(streak.current) });
+  }
+  const now = new Date();
+  const today = after.filter((entry) => new Date(entry.consumedAt).toDateString() === now.toDateString()).length;
+  return today === 1 ? t('celebrate.today.one') : t('celebrate.today.other', { count: formatNumber(today) });
 }
 
 export default function LogCoffeeScreen() {
@@ -77,8 +92,26 @@ export default function LogCoffeeScreen() {
     setError(null);
     setSubmitting(true);
     try {
+      const before = computeStreak(entries);
       const created = await add(draft);
       successFeedback();
+      const after = [created, ...entries];
+      const line = celebrationLine(before, after);
+      // The first of its kind gets its album card instead.
+      const album = buildAlbum(after);
+      const card = album.find((slot) => slot.latest?.id === created.id && slot.count === 1);
+      if (card) {
+        revealNewCard({
+          drink: card.value,
+          name: card.name,
+          number: card.number,
+          collected: collectedCount(album),
+          total: album.length,
+          line,
+        });
+      } else {
+        celebrate({ drink: created.type, title: t('celebrate.logged'), line });
+      }
       setSpent(at ?? null);
       setFormKey((key) => key + 1);
       // The saved coffee is shown as it now stands in the journal, which a

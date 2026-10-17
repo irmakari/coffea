@@ -40,6 +40,14 @@ export const en = {
     },
   },
   home: {
+    caffeine: {
+      title: 'Caffeine in you now',
+      unit: 'mg',
+      clearAt: 'Below sleep level by {{time}}',
+      clear: 'Low enough for sleep',
+      none: 'Worn off',
+      legend: 'Each bean is about {{count}} mg',
+    },
     greeting: {
       morning: 'Good morning',
       afternoon: 'Good afternoon',
@@ -85,6 +93,14 @@ export const en = {
       calendar: 'Calendar',
       album: 'Album',
     },
+    year: {
+      open: 'See the whole year',
+      previous: 'Previous year',
+      next: 'Next year',
+      summary: '{{cups}} coffees on {{days}} days',
+      less: 'Less',
+      more: 'More',
+    },
     empty: {
       title: 'Nothing here yet',
       body: 'Every coffee you log is kept here, newest first.',
@@ -94,6 +110,11 @@ export const en = {
   album: {
     title: 'Album',
     progress: '{{collected}} / {{total}}',
+    shelves: {
+      hot: 'Hot coffees',
+      iced: 'Iced coffees',
+      tea: 'Teas',
+    },
     body: 'Every coffee you try for the first time fills a spot, with a sticker from your photo.',
     locked: '{{name}}, not collected yet',
     collected: '{{name}}, collected {{count}} times',
@@ -562,15 +583,17 @@ export const en = {
       cup: 'cup',
       cups: 'cups',
     },
+    shelf: 'Their album',
     album: {
       title: 'Album',
+      count: '{{count}} of {{total}}',
       of: 'of {{total}}',
       rank: '#{{rank}} among friends',
     },
     hidden: 'They keep their totals and their album to themselves.',
     firsts: 'New to them lately',
     noFirsts: 'Nothing new to them in the last 30 days.',
-    privacy: 'Friends see totals and the coffees they try for the first time, never notes, photos or cafés.',
+    privacy: 'Friends see what they drink, how they had it and their notes, never photos, cafés or prices.',
   },
   leaderboard: {
     title: 'Leaderboard',
@@ -738,6 +761,96 @@ export const en = {
     DKK: 'Danish Krone',
     AED: 'UAE Dirham',
   },
+  friendsLog: {
+    had: ' had ',
+    newCard: 'New in their album · {{number}}',
+    newCards: '{{count}} new in their album',
+    profile: 'See their page',
+    empty: 'When friends log a coffee, it shows up here.',
+    share: {
+      label: 'Show my coffees to friends',
+      on: 'Friends see what you drink, how you had it and your notes, never your photos, cafés or prices.',
+      off: 'Your coffees stay to yourself. Friends still see you on the leaderboard if you are on it.',
+      error: 'That did not save. Please try again.',
+    },
+  },
+  friendCoffee: {
+    first: 'Their first',
+    rating: 'Rating',
+    note: 'Their note',
+    plain: 'Logged without any details.',
+    error: 'This coffee did not load. Please try again.',
+    privacy: 'Cafés, prices and photos stay private.',
+  },
+  fortune: {
+    title: 'Coffee fortune',
+    entry: {
+      title: 'Read your fortune',
+      body: 'Turn the cup over and see what the grounds say.',
+    },
+    intro: 'Make a wish, then turn your cup over on its saucer.',
+    turn: 'Turn the cup over',
+    cooling: 'Letting it cool…',
+    lift: 'Lift the cup',
+    reading: 'What the grounds say',
+    again: 'Back to my coffee',
+    disclaimer: 'Just for fun. The grounds are read from your journal.',
+    symbols: {
+      bird: 'A bird',
+      road: 'A road',
+      heart: 'A heart',
+      fish: 'A fish',
+      key: 'A key',
+      moon: 'A moon',
+      star: 'A star',
+    },
+    bird: {
+      friends: 'News is on its way. A friend is about to raise a cup to you.',
+      alone: 'News is on its way. Someone new will share a coffee with you soon.',
+    },
+    road: {
+      cafe: 'A road opens up. It leads, as roads do, back to {{cafe}}.',
+      none: 'A road opens up, to a café you have never been to.',
+    },
+    heart: {
+      one: 'Your heart is not easily won: one coffee holds all of it.',
+      some: 'Your heart is easily won: {{count}} coffees already hold a piece of it.',
+      none: 'Your heart is still waiting for the one coffee worth a heart.',
+    },
+    fish: {
+      one: 'Plenty is coming your way. One cup this month, and the pot is still full.',
+      other: 'Plenty is coming your way. {{count}} cups this month, and the pot is not empty yet.',
+    },
+    key: {
+      next: 'A door is about to open, and the key is shaped like your next coffee: {{name}}.',
+      done: 'Every door is open: there is no coffee left you have not tried.',
+    },
+    moon: {
+      later: 'A calm night is ahead, once the caffeine lets go around {{time}}.',
+      now: 'A calm night is ahead. Nothing in this cup will keep you up.',
+    },
+    star: {
+      streak: 'A wish comes true if the {{count}}-day streak lives to see tomorrow.',
+      start: 'A wish comes true for whoever starts a streak tomorrow.',
+    },
+  },
+  newCard: {
+    eyebrow: 'A new coffee',
+    tap: 'Tap to turn it over',
+    open: 'Turn the card over',
+    title: 'New in your album!',
+    progress: '{{collected}} of {{total}} collected',
+    done: 'Nice',
+  },
+  celebrate: {
+    logged: 'Logged!',
+    streakStart: 'Day one of a new streak',
+    streakUp: '{{count}} days in a row 🔥',
+    today: {
+      one: 'Your first coffee today',
+      other: 'Coffee number {{count}} today',
+    },
+  },
   entry: {
     newTitle: 'Log a coffee',
     editTitle: 'Edit coffee',
@@ -793,6 +906,7 @@ export const en = {
         milk: 'With milk',
         iced: 'Iced & shaken',
         brewed: 'Brewed',
+        tea: 'Tea',
       },
     },
     milk: {

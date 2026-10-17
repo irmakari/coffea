@@ -33,10 +33,20 @@ export const moreCoffees: { title: TranslationKey; names: string[] }[] = [
       'Nitro Cold Brew',
       'Frappé',
       'Espresso Tonic',
+      'Iced Cappuccino',
+      'Iced Flat White',
+      'Iced Spanish Latte',
+      'Iced Vanilla Latte',
+      'Iced Matcha Latte',
+      'Iced Chai Latte',
     ],
   },
   {
     title: 'entry.more.groups.brewed',
     names: ['Pour Over', 'Chemex', 'French Press', 'AeroPress', 'Moka Pot', 'Syphon'],
+  },
+  {
+    title: 'entry.more.groups.tea',
+    names: ['Turkish Tea', 'Black Tea', 'Green Tea', 'Earl Grey', 'Herbal Tea', 'Iced Tea'],
   },
 ];

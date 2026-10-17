@@ -1,13 +1,13 @@
 import { router } from "expo-router";
 import { setStatusBarStyle } from "expo-status-bar";
-import { useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { RefreshControl, ScrollView, View } from "react-native";
+import Animated, {
+  useAnimatedReaction,
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -26,7 +26,9 @@ import {
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
+import { PullBean } from "@/features/home/PullBean";
 import { TodayInvite } from "@/features/home/TodayInvite";
+import { CaffeineCard } from "@/features/stats/CaffeineCard";
 import { StreakCard } from "@/features/stats/StreakCard";
 import { useProfile } from "@/features/profile/ProfileProvider";
 import { useHeroStatusBar } from "@/features/theme/theme";
@@ -51,7 +53,7 @@ function greetingKey(hour: number): TranslationKey {
 }
 
 // The tan block that opens the app: who, when, and the one thing to do.
-function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
+function Hero({ count }: { count: number }) {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const now = new Date();
@@ -67,15 +69,9 @@ function Hero({ count, refreshing }: { count: number; refreshing: boolean }) {
             <Text variant="subheading" color="heroText">
               {t("brand.name")}
             </Text>
-            {/* iOS would spin behind the status bar, which the hero runs
-                under, so the hero shows the reload itself. */}
-            {refreshing && Platform.OS === "ios" ? (
-              <ActivityIndicator size="small" color={colors.heroTextSecondary} />
-            ) : (
-              <Text variant="caption" color="heroText">
-                {formatDate(now, "day")}
-              </Text>
-            )}
+            <Text variant="caption" color="heroText">
+              {formatDate(now, "day")}
+            </Text>
           </View>
 
           <View style={styles.heroBody}>
@@ -131,14 +127,23 @@ export default function HomeScreen() {
 
   // Once the hero has scrolled away, the strip behind the clock takes the
   // page's colour, so no band of tan is left floating over the list.
-  const heroHeight = useRef(0);
+  const heroHeight = useSharedValue(0);
+  const scrollY = useSharedValue(0);
   const [pastHero, setPastHero] = useState(false);
-  const onScroll = (y: number) => {
-    const past = heroHeight.current > 0 && y > heroHeight.current - insets.top;
-    if (past === pastHero) return;
+  const onPastHero = (past: boolean) => {
     setPastHero(past);
     if (isDarkHero()) setStatusBarStyle(past && !isDarkTheme() ? "dark" : "light");
   };
+  const topInset = insets.top;
+  useAnimatedReaction(
+    () => heroHeight.value > 0 && scrollY.value > heroHeight.value - topInset,
+    (past, wasPast) => {
+      if (wasPast !== null && past !== wasPast) scheduleOnRN(onPastHero, past);
+    },
+  );
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
 
   const refresh = async () => {
     setRefreshing(true);
@@ -167,13 +172,13 @@ export default function HomeScreen() {
       {/* Pulling the page down would otherwise open a pale gap above the tan.
           It lies behind the list, so the refresh spinner shows on top of it. */}
       <View style={styles.backdrop} />
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         // The hero is tan to the very top, behind the status bar.
         contentInsetAdjustmentBehavior="never"
-        onScroll={(event) => onScroll(event.nativeEvent.contentOffset.y)}
-        scrollEventThrottle={32}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -189,10 +194,10 @@ export default function HomeScreen() {
       >
         <View
           onLayout={(event) => {
-            heroHeight.current = event.nativeEvent.layout.height;
+            heroHeight.value = event.nativeEvent.layout.height;
           }}
         >
-          <Hero count={entries.length} refreshing={refreshing} />
+          <Hero count={entries.length} />
         </View>
 
         {!latest ? (
@@ -246,6 +251,8 @@ export default function HomeScreen() {
               )}
             </View>
 
+            <CaffeineCard entries={entries} />
+
             <StreakCard entries={entries} />
 
             <AlbumGlance />
@@ -296,7 +303,10 @@ export default function HomeScreen() {
             ) : null}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
+      {/* iOS would spin behind the status bar, which the hero runs under,
+          so a bean in the gap the pull opens shows the reload instead. */}
+      <PullBean scrollY={scrollY} refreshing={refreshing} topInset={insets.top} />
       {/* Keeps the clock and battery readable once content scrolls beneath them. */}
       <View style={[styles.statusBar, pastHero && styles.statusBarPage, { height: insets.top }]} />
     </View>

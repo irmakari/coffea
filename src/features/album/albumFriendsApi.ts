@@ -77,3 +77,62 @@ export async function fetchActivity(maxItems = 30): Promise<Activity[]> {
     collected: row.collected,
   }));
 }
+
+// One friend's collected album coffees, each with when it was first had.
+export type Collected = { coffee: string; collectedAt: string };
+
+export async function fetchFriendAlbum(friend: string): Promise<Collected[]> {
+  const { data, error } = await supabase.rpc('friend_album', { friend, catalog: catalog() });
+  if (error) throw error;
+  return ((data ?? []) as { coffee_type: string; collected_at: string }[]).map((row) => ({
+    coffee: row.coffee_type,
+    collectedAt: row.collected_at,
+  }));
+}
+
+// The first time a friend had one album coffee, as they filled it in. Never
+// their café, price or photo, which stay with them.
+export type FriendCoffee = {
+  name: string;
+  type: string | null;
+  milk: string | null;
+  size: string | null;
+  shots: number | null;
+  temperature: string | null;
+  venue: string | null;
+  rating: number | null;
+  notes: string | null;
+  consumedAt: string;
+};
+
+type FriendCoffeeRow = {
+  coffee_name: string;
+  coffee_type: string | null;
+  milk: string | null;
+  size: string | null;
+  shots: number | null;
+  temperature: string | null;
+  venue: string | null;
+  rating: number | null;
+  notes?: string | null;
+  consumed_at: string;
+};
+
+export async function fetchFriendCoffee(friend: string, coffee: string): Promise<FriendCoffee | null> {
+  const { data, error } = await supabase.rpc('friend_first_coffee', { friend, coffee });
+  if (error) throw error;
+  const row = ((data ?? []) as FriendCoffeeRow[])[0];
+  if (!row) return null;
+  return {
+    name: row.coffee_name,
+    type: row.coffee_type,
+    milk: row.milk,
+    size: row.size,
+    shots: row.shots,
+    temperature: row.temperature,
+    venue: row.venue,
+    rating: row.rating,
+    notes: row.notes?.trim() || null,
+    consumedAt: row.consumed_at,
+  };
+}

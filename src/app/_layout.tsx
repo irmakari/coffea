@@ -3,9 +3,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AlertHost } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { NewCardHost } from '@/features/album/NewCardReveal';
+import { CelebrationHost } from '@/features/celebrate/Celebration';
 import { BucketListProvider } from '@/features/bucketList/BucketListProvider';
 import { EntriesProvider } from '@/features/entries/EntriesProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
@@ -25,6 +28,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthProvider>
       <EntriesProvider>
         <BucketListProvider>
@@ -36,6 +40,7 @@ export default function RootLayout() {
         </BucketListProvider>
       </EntriesProvider>
     </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -85,12 +90,15 @@ function RootNavigator() {
           <Stack.Screen name="friends/[id]" />
           <Stack.Screen name="add/[username]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bucket-list/index" />
+          <Stack.Screen name="fortune/[id]" />
           <Stack.Screen name="bucket-list/item" options={{ presentation: 'modal' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
+      <CelebrationHost />
+      <NewCardHost />
       <AlertHost />
     </Fragment>
   );

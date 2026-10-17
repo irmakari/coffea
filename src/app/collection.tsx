@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState, PageHeader } from '@/components/ui';
 import { collect, countLabel, isCollectionKind } from '@/features/collections/collections';
 import { useEntries } from '@/features/entries/EntriesProvider';
-import { EntryCard } from '@/features/entries/EntryCard';
+import { EntryRow } from '@/features/entries/EntryCard';
 import { t } from '@/i18n';
 import { colors, contentColumn, spacing, themed } from '@/theme';
 
@@ -24,7 +24,14 @@ export default function CollectionScreen() {
       <FlatList
         data={collection.entries}
         keyExtractor={(entry) => entry.id}
-        renderItem={({ item }) => <EntryCard entry={item} />}
+        // A plain list split by hairlines, as Home and the friends list are.
+        renderItem={({ item, index }) => (
+          <EntryRow
+            entry={item}
+            rating={collection.kind === 'fiveStars'}
+            last={index === collection.entries.length - 1}
+          />
+        )}
         ListHeaderComponent={
           <View style={styles.header}>
             <PageHeader
@@ -44,7 +51,6 @@ export default function CollectionScreen() {
             />
           )
         }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={[contentColumn, styles.content]}
         showsVerticalScrollIndicator={false}
       />
@@ -64,9 +70,6 @@ const styles = themed(() => ({
     paddingBottom: spacing.xxxl,
   },
   header: {
-    marginBottom: spacing.xl,
-  },
-  separator: {
-    height: spacing.xxl,
+    marginBottom: spacing.md,
   },
 }));

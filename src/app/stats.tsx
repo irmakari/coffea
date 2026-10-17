@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { Button, Card, CupMark, PageHeader, Screen, SectionHeader, SegmentedControl, Text } from '@/components/ui';
+import { Button, Card, CupMark, PageHeader, RollingNumber, Screen, SectionHeader, SegmentedControl, Text } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryRow } from '@/features/entries/EntryCard';
 import { isCoffeeType } from '@/features/entries/types';
@@ -31,9 +31,7 @@ function typeName(tally: Tally) {
 function SummaryFigure({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.summaryFigure}>
-      <Text style={styles.summaryValue} numberOfLines={1}>
-        {value}
-      </Text>
+      <RollingNumber value={value} style={styles.summaryValue} />
       <Text variant="caption" color="accentPressed" numberOfLines={1}>
         {label}
       </Text>
@@ -50,9 +48,7 @@ function Amount({ label, value, unit }: { label: string; value: string; unit?: s
         {label}
       </Text>
       <View style={styles.amountLine}>
-        <Text style={styles.amountValue} numberOfLines={1}>
-          {value}
-        </Text>
+        <RollingNumber value={value} style={styles.amountValue} />
         {unit ? (
           <Text variant="bodyStrong" color="textSecondary">
             {unit}

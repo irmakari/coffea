@@ -100,9 +100,34 @@ const typeSpellings: Record<string, CoffeeType> = {
   matchalatte: 'matcha',
 };
 
+// How people write some of the coffees and teas behind "Other", reduced the
+// same way, to the name the album knows them by.
+const moreSpellings: Record<string, string> = {
+  tea: 'Turkish Tea',
+  cay: 'Turkish Tea',
+  turkishtea: 'Turkish Tea',
+  turkcayi: 'Turkish Tea',
+  turkcay: 'Turkish Tea',
+  blacktea: 'Black Tea',
+  siyahcay: 'Black Tea',
+  greentea: 'Green Tea',
+  yesilcay: 'Green Tea',
+  earlgrey: 'Earl Grey',
+  herbaltea: 'Herbal Tea',
+  bitkicayi: 'Herbal Tea',
+  bitkicay: 'Herbal Tea',
+  icedtea: 'Iced Tea',
+  icetea: 'Iced Tea',
+  sogukcay: 'Iced Tea',
+  icedamericano: 'Iced Americano',
+  iceamericano: 'Iced Americano',
+  buzluamericano: 'Iced Americano',
+};
+
 // A type written by hand that names one of the predefined types is read as
 // that type, so it gets the same drawing and is counted together with it.
-// Anything else is kept as written.
+// One that names a coffee or tea from the longer list takes that name, so it
+// counts towards the album. Anything else is kept as written.
 export function recognizeType(value: string | null): string | null {
   if (value === null || isCoffeeType(value)) return value;
   const spelling = value
@@ -111,7 +136,7 @@ export function recognizeType(value: string | null): string | null {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/ı/g, 'i')
     .replace(/[^a-z0-9]/g, '');
-  return typeSpellings[spelling] ?? value;
+  return typeSpellings[spelling] ?? moreSpellings[spelling] ?? value;
 }
 
 // A saved coffee, as the app reads it.

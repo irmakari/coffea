@@ -1,3 +1,4 @@
+import { isIcedDrawing } from '@/components/ui/CupMark';
 import { moreCoffees } from '@/features/entries/moreCoffees';
 import { coffeeTypes, isCoffeeType, type Entry } from '@/features/entries/types';
 import { t } from '@/i18n';
@@ -20,14 +21,33 @@ export type AlbumCard = AlbumSlot & {
   count: number;
 };
 
-// Every coffee the app knows by name, the short row of types first. Coffees
-// typed in by hand are not part of it: there is no end to those.
+// The album's three shelves, in the order it shows them.
+export const albumShelves = ['hot', 'iced', 'tea'] as const;
+export type AlbumShelf = (typeof albumShelves)[number];
+
+const teas = new Set([
+  'matcha',
+  'Iced Matcha Latte',
+  ...(moreCoffees.find((group) => group.title === 'entry.more.groups.tea')?.names ?? []),
+]);
+
+// Which shelf a coffee sits on: teas together, then by whether it is drawn
+// in an iced cup.
+export function shelfOf(value: string): AlbumShelf {
+  if (teas.has(value)) return 'tea';
+  return isIcedDrawing(value) ? 'iced' : 'hot';
+}
+
+// Every coffee the app knows by name, the short row of types first, then
+// sorted onto their shelves and numbered in that order. Coffees typed in by
+// hand are not part of it: there is no end to those.
 export function albumSlots(): AlbumSlot[] {
   const values = [
     ...coffeeTypes.filter((type) => type !== 'other'),
     ...moreCoffees.flatMap((group) => group.names),
   ];
-  return values.map((value, index) => ({
+  const shelved = albumShelves.flatMap((shelf) => values.filter((value) => shelfOf(value) === shelf));
+  return shelved.map((value, index) => ({
     number: index + 1,
     value,
     name: isCoffeeType(value) ? t(`coffeeTypes.${value}`) : value,

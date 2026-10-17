@@ -18,6 +18,8 @@ type Profile = {
   username: string | null;
   // Whether friends see this account on their weekly leaderboard.
   onLeaderboard: boolean;
+  // Whether friends see the coffees this account logs.
+  shareLogs: boolean;
   preferredCurrency: string;
   // Where the photo lives in private storage, and a link to show it.
   avatarPath: string | null;
@@ -31,6 +33,7 @@ type ProfileState = {
   // Takes the username as stored; see `normalizeUsername`.
   setUsername: (username: string) => Promise<void>;
   setOnLeaderboard: (value: boolean) => Promise<void>;
+  setShareLogs: (value: boolean) => Promise<void>;
   // Takes a photo file on the device.
   setAvatar: (localUri: string) => Promise<void>;
   removeAvatar: () => Promise<void>;
@@ -40,6 +43,7 @@ type ProfileRow = {
   display_name: string | null;
   username: string | null;
   on_leaderboard: boolean;
+  share_logs?: boolean;
   preferred_currency: string;
   avatar_path: string | null;
 };
@@ -48,6 +52,7 @@ const fallback: Profile = {
   displayName: null,
   username: null,
   onLeaderboard: true,
+  shareLogs: true,
   preferredCurrency: DEFAULT_CURRENCY,
   avatarPath: null,
   avatarUrl: null,
@@ -76,10 +81,18 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   if (!data) return null;
 
   const links = data.avatar_path ? await createPhotoLinks([data.avatar_path]).catch(() => null) : null;
+  // Asked for on its own, so a server without the setting yet still loads
+  // the rest of the profile.
+  const sharing = await supabase
+    .from('profiles')
+    .select('share_logs')
+    .eq('id', userId)
+    .maybeSingle<{ share_logs: boolean }>();
   return {
     displayName: data.display_name,
     username: data.username,
     onLeaderboard: data.on_leaderboard,
+    shareLogs: sharing.data?.share_logs ?? true,
     preferredCurrency: data.preferred_currency,
     avatarPath: data.avatar_path,
     avatarUrl: (data.avatar_path && links?.get(data.avatar_path)) || null,
@@ -146,6 +159,18 @@ function ProfileStore({ userId, children }: { userId: string | null; children: R
         apply(onLeaderboard);
         try {
           await save({ on_leaderboard: onLeaderboard });
+        } catch (error) {
+          apply(previous);
+          throw error;
+        }
+      },
+      setShareLogs: async (shareLogs) => {
+        const previous = profile.shareLogs;
+        const apply = (value: boolean) => setProfile((current) => ({ ...current, shareLogs: value }));
+        // Show the choice at once and put it back if the save fails.
+        apply(shareLogs);
+        try {
+          await save({ share_logs: shareLogs });
         } catch (error) {
           apply(previous);
           throw error;

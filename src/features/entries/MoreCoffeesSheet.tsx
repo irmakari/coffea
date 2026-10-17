@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chip, CupMark, SectionHeader, Text, TextField } from '@/components/ui';
+import { CupMark, SectionHeader, Text, TextField } from '@/components/ui';
 import { t } from '@/i18n';
+import { tapFeedback } from '@/lib/haptics';
 import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
 
 import { moreCoffees } from './moreCoffees';
+
+// Four coffees to a row, each drawn this big.
+const COLUMNS = 4;
+const TILE_CUP = 60;
 
 type MoreCoffeesSheetProps = {
   visible: boolean;
@@ -83,15 +88,39 @@ function Sheet({ value, onDone }: Omit<MoreCoffeesSheetProps, 'visible'>) {
           {moreCoffees.map((group) => (
             <View key={group.title}>
               <SectionHeader title={t(group.title)} />
-              <View style={styles.chips}>
-                {group.names.map((name) => (
-                  <Chip
-                    key={name}
-                    label={name}
-                    selected={name === typed}
-                    onPress={() => setText(name === typed ? '' : name)}
-                  />
-                ))}
+              {/* Each coffee drawn, with its name under it, so they can be told apart at a glance. */}
+              <View style={styles.grid}>
+                {group.names.map((name) => {
+                  const selected = name === typed;
+                  return (
+                    <Pressable
+                      key={name}
+                      accessibilityRole="button"
+                      accessibilityLabel={name}
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        tapFeedback();
+                        setText(selected ? '' : name);
+                      }}
+                      style={styles.cell}
+                    >
+                      {({ pressed }) => (
+                        <View style={[styles.tile, selected && styles.tileSelected, pressed && styles.tilePressed]}>
+                          <CupMark drink={name} size={TILE_CUP} />
+                          <Text
+                            variant="caption"
+                            color={selected ? 'text' : 'textSecondary'}
+                            align="center"
+                            numberOfLines={2}
+                            style={styles.tileName}
+                          >
+                            {name}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           ))}
@@ -143,9 +172,34 @@ const styles = themed(() => ({
     flex: 1,
     gap: spacing.xs,
   },
-  chips: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    marginHorizontal: -spacing.xs,
+    rowGap: spacing.sm,
+  },
+  cell: {
+    width: `${100 / COLUMNS}%`,
+    paddingHorizontal: spacing.xs,
+  },
+  tile: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: 2,
+    borderRadius: radii.control,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  tileSelected: {
+    backgroundColor: colors.highlight,
+    borderColor: colors.accent,
+  },
+  tilePressed: {
+    opacity: 0.6,
+  },
+  tileName: {
+    minHeight: 32,
   },
 }));

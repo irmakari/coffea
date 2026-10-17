@@ -1,14 +1,14 @@
-import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { CoffeePhoto, CupMark, Icon, Text } from '@/components/ui';
+import { CupMark, Icon, Text } from '@/components/ui';
 import { t, type TranslationKey } from '@/i18n';
 import { colors, photoRatio, radii, sizes, spacing, themed, withAlpha } from '@/theme';
 
 import { askPhotoSource } from './askPhotoSource';
 import { CameraDeniedError, pickPhoto, type PhotoSource } from './pickPhoto';
 import { useSticker } from './sticker';
+import { StickerReveal } from './StickerReveal';
 
 type PhotoFieldProps = {
   uri: string | null;
@@ -58,13 +58,7 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
             onPress={choose}
             style={busy && styles.busy}
           >
-            {sticker ? (
-              <View style={styles.stickerBackdrop}>
-                <Image source={{ uri: sticker }} contentFit="contain" transition={200} style={styles.sticker} />
-              </View>
-            ) : (
-              <CoffeePhoto uri={uri} ratio="landscape" />
-            )}
+            <StickerReveal photoUri={uri} sticker={sticker} />
           </Pressable>
           {/* While the sticker is being cut out; it takes the photo's place when ready. */}
           {sticker === undefined ? (
@@ -145,15 +139,6 @@ const styles = themed(() => ({
     marginTop: spacing.xs,
     borderRadius: radii.pill,
     backgroundColor: colors.surface,
-  },
-  stickerBackdrop: {
-    aspectRatio: photoRatio.landscape,
-    borderRadius: radii.frame,
-    backgroundColor: colors.highlight,
-    padding: spacing.lg,
-  },
-  sticker: {
-    flex: 1,
   },
   busy: {
     opacity: 0.6,
