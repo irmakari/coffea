@@ -94,7 +94,7 @@ export default function FriendsScreen() {
             {/* Every coffee friends log, once the server offers it; until then
                 only their album firsts. */}
             {log.status === 'ready' ? (
-              <FriendsLogList groups={log.groups} coffees={log.coffees} />
+              <FriendsLogList groups={log.groups} coffees={log.coffees} me={log.me} />
             ) : log.status === 'loading' ? null : album.status === 'ready' ? (
               <ActivityList items={album.activity} />
             ) : album.status === 'error' ? (

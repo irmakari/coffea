@@ -29,10 +29,8 @@ export const en = {
     profile: 'Profile',
   },
   quickLog: {
-    title: 'Quick log',
-    body: 'Pick a coffee and the form opens filled in.',
-    hint: 'Hold to pick a coffee.',
-    tip: 'Hold the cup to pick a coffee',
+    hint: 'Hold and slide to a coffee to log it.',
+    tip: 'Hold the cup and slide to a coffee',
     replace: {
       title: 'Start over?',
       body: 'The coffee you started will be replaced.',
@@ -765,6 +763,10 @@ export const en = {
     had: ' had ',
     newCard: 'New in their album · {{number}}',
     newCards: '{{count}} new in their album',
+    own: {
+      newCard: 'New in your album · {{number}}',
+      newCards: '{{count}} new in your album',
+    },
     profile: 'See their page',
     empty: 'When friends log a coffee, it shows up here.',
     share: {
@@ -778,7 +780,6 @@ export const en = {
     first: 'Their first',
     rating: 'Rating',
     note: 'Their note',
-    plain: 'Logged without any details.',
     error: 'This coffee did not load. Please try again.',
     privacy: 'Cafés, prices and photos stay private.',
   },

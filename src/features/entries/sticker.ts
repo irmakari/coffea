@@ -12,7 +12,9 @@ const STICKER_SIZE = 400;
 const made = new Map<string, string | null>();
 const making = new Map<string, Promise<string | null>>();
 
-function makeSticker(source: string, key: string): Promise<string | null> {
+// A photo's sticker as a file on the phone, made now unless it was before.
+// Null where there is none.
+export function makeSticker(source: string, key: string): Promise<string | null> {
   const started = making.get(key);
   if (started) return started;
   const sticker = (CoffeeSticker?.stickerAsync(source, key, STICKER_SIZE) ?? Promise.resolve(null))

@@ -25,22 +25,24 @@ const edgeOffsets = Array.from({ length: EDGE_STEPS }, (_, step) => {
   return { x: Math.cos(angle) * EDGE, y: Math.sin(angle) * EDGE };
 });
 
-// A cut-out with a white edge, like a sticker peeled off a sheet.
-export function StickerImage({ uri, edge = true }: { uri: string; edge?: boolean }) {
+// A cut-out with a white edge, like a sticker peeled off a sheet. A
+// `cacheKey` keeps one behind a changing link from being fetched again.
+export function StickerImage({ uri, cacheKey, edge = true }: { uri: string; cacheKey?: string; edge?: boolean }) {
+  const source = { uri, cacheKey };
   return (
     <View style={StyleSheet.absoluteFill}>
       {edge
         ? edgeOffsets.map((offset, index) => (
             <Image
               key={index}
-              source={{ uri }}
+              source={source}
               contentFit="contain"
               tintColor="#FFFFFF"
               style={[StyleSheet.absoluteFill, { transform: [{ translateX: offset.x }, { translateY: offset.y }] }]}
             />
           ))
         : null}
-      <Image source={{ uri }} contentFit="contain" style={StyleSheet.absoluteFill} />
+      <Image source={source} contentFit="contain" style={StyleSheet.absoluteFill} />
     </View>
   );
 }

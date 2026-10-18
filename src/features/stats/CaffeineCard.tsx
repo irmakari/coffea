@@ -47,7 +47,8 @@ export function CaffeineCard({ entries }: { entries: Entry[] }) {
           {t('home.caffeine.title')}
         </Text>
         <View style={styles.amount}>
-          <RollingNumber variant="title" value={`~${formatNumber(amount)}`} />
+          {/* Nothing left is said plainly, not as an estimate. */}
+          <RollingNumber variant="title" value={amount === 0 ? formatNumber(0) : `~${formatNumber(amount)}`} />
           <Text variant="bodyStrong" color="textSecondary">
             {t('home.caffeine.unit')}
           </Text>

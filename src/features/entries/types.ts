@@ -153,6 +153,8 @@ export type Entry = {
   photoUrl: string | null;
   // A smaller copy made for the old friends feed, removed with the photo.
   photoThumbPath: string | null;
+  // The photo's sticker, once it was cut out and shared for friends to see.
+  stickerPath: string | null;
   consumedAt: string;
   price: number | null;
   currency: string | null;

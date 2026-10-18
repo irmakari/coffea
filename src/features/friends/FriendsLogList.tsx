@@ -7,17 +7,26 @@ import { Avatar, BottomSheet, CupMark, Icon, SectionHeader, Text } from '@/compo
 import { activityWhen, coffeeName } from '@/features/album/FriendsAlbum';
 import { servedAs } from '@/features/album/FriendCoffeeSheet';
 import { slotNumber } from '@/features/album/album';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { useEntries } from '@/features/entries/EntriesProvider';
+import { StickerImage } from '@/features/entries/StickerReveal';
+import { useSticker } from '@/features/entries/sticker';
 import { MAX_RATING } from '@/features/entries/types';
+import { useProfile } from '@/features/profile/ProfileProvider';
 import { formatDate, formatNumber, t } from '@/i18n';
 import { colors, contentColumn, fonts, radii, sizes, spacing, themed } from '@/theme';
 
 import { personName } from './friendsApi';
-import { fetchFriendsLog, groupLog, type LogGroup, type LoggedCoffee } from './friendsLogApi';
+import { fetchFriendsLog, groupLog, mergeLogs, ownLog, type LogGroup, type LoggedCoffee } from './friendsLogApi';
 
 type Status = 'loading' | 'ready' | 'error';
 
-// Friends' coffees, loaded whenever the friends tab comes into view.
+// Friends' coffees, loaded whenever the friends tab comes into view, with the
+// user's own among them.
 export function useFriendsLog() {
+  const { session } = useAuth();
+  const { profile } = useProfile();
+  const { entries } = useEntries();
   const [coffees, setCoffees] = useState<LoggedCoffee[]>([]);
   const [status, setStatus] = useState<Status>('loading');
   const generation = useRef(0);
@@ -40,7 +49,21 @@ export function useFriendsLog() {
     }, [reload]),
   );
 
-  return { coffees, groups: groupLog(coffees), status, reload };
+  const me = session?.user.id;
+  const all = me
+    ? mergeLogs(
+        coffees,
+        ownLog(entries, {
+          id: me,
+          username: profile.username,
+          displayName: profile.displayName,
+          avatarPath: profile.avatarPath,
+          avatarUrl: profile.avatarUrl,
+        }),
+      )
+    : coffees;
+
+  return { coffees: all, groups: groupLog(all), status, reload, me };
 }
 
 // "2 Turkish Coffee · Latte": what was drunk, the most-had first.
@@ -56,6 +79,20 @@ function summary(coffees: LoggedCoffee[]) {
     .join(' · ');
 }
 
+// A coffee's sticker where there is one, a friend's as they shared it and
+// the user's own cut from their photo here; else the drawing of the drink.
+// The white edge is drawn only where it is large enough to show.
+function CoffeeMark({ coffee, size }: { coffee: LoggedCoffee; size: number }) {
+  const own = useSticker(coffee.photo?.url ?? null, coffee.photo?.path ?? null);
+  const uri = coffee.stickerUrl ?? own;
+  if (!uri) return <CupMark drink={coffee.type ?? coffee.name} size={size} />;
+  return (
+    <View style={{ width: size, height: size }}>
+      <StickerImage uri={uri} cacheKey={coffee.stickerPath ?? undefined} edge={size >= 52} />
+    </View>
+  );
+}
+
 // Up to three cups, overlapping, for the drinks of one line.
 function Cups({ coffees }: { coffees: LoggedCoffee[] }) {
   const shown = coffees.slice(0, 3);
@@ -63,14 +100,25 @@ function Cups({ coffees }: { coffees: LoggedCoffee[] }) {
     <View style={[styles.cups, { width: 40 + (shown.length - 1) * 18 }]}>
       {shown.map((coffee, index) => (
         <View key={coffee.id} style={[styles.cup, { left: index * 18, zIndex: shown.length - index }]}>
-          <CupMark drink={coffee.type ?? coffee.name} size={40} />
+          <CoffeeMark coffee={coffee} size={40} />
         </View>
       ))}
     </View>
   );
 }
 
-function GroupRow({ group, last, onPress }: { group: LogGroup; last: boolean; onPress: () => void }) {
+// A line of the list. The user's own read "You had …".
+function GroupRow({
+  group,
+  own,
+  last,
+  onPress,
+}: {
+  group: LogGroup;
+  own: boolean;
+  last: boolean;
+  onPress: () => void;
+}) {
   const [latest] = group.coffees;
   const firsts = group.coffees.filter((coffee) => coffee.albumNumber !== null);
   const name = personName(group.person);
@@ -84,7 +132,7 @@ function GroupRow({ group, last, onPress }: { group: LogGroup; last: boolean; on
       <Avatar uri={group.person.avatarUrl} cacheKey={group.person.avatarPath} name={name} size={40} />
       <View style={styles.rowText}>
         <Text numberOfLines={2}>
-          <Text style={styles.strong}>{name}</Text>
+          <Text style={styles.strong}>{own ? t('feed.you') : name}</Text>
           {t('friendsLog.had')}
           <Text style={styles.strong}>{summary(group.coffees)}</Text>
         </Text>
@@ -97,8 +145,12 @@ function GroupRow({ group, last, onPress }: { group: LogGroup; last: boolean; on
           <View style={styles.badge}>
             <Text variant="caption" color="boardAccent">
               {firsts.length === 1
-                ? t('friendsLog.newCard', { number: slotNumber(firsts[0].albumNumber ?? 0) })
-                : t('friendsLog.newCards', { count: formatNumber(firsts.length) })}
+                ? t(own ? 'friendsLog.own.newCard' : 'friendsLog.newCard', {
+                    number: slotNumber(firsts[0].albumNumber ?? 0),
+                  })
+                : t(own ? 'friendsLog.own.newCards' : 'friendsLog.newCards', {
+                    count: formatNumber(firsts.length),
+                  })}
             </Text>
           </View>
         ) : null}
@@ -133,7 +185,7 @@ function CoffeeItem({ coffee, onPress }: { coffee: LoggedCoffee; onPress: () => 
       onPress={onPress}
       style={({ pressed }) => [styles.item, pressed && styles.pressed]}
     >
-      <CupMark drink={coffee.type ?? coffee.name} size={52} />
+      <CoffeeMark coffee={coffee} size={52} />
       <View style={styles.coffeeText}>
         <Text variant="bodyStrong" numberOfLines={1}>
           {coffee.name}
@@ -149,16 +201,18 @@ function CoffeeItem({ coffee, onPress }: { coffee: LoggedCoffee; onPress: () => 
 }
 
 // One coffee as its owner filled it in: rating, how it was served, the note.
-function CoffeeDetails({ coffee }: { coffee: LoggedCoffee }) {
+function CoffeeDetails({ coffee, own }: { coffee: LoggedCoffee; own: boolean }) {
   const rows = servedAs(coffee);
   return (
     <View style={styles.details}>
       <View style={styles.coffeeHead}>
-        <CupMark drink={coffee.type ?? coffee.name} size={88} />
+        <CoffeeMark coffee={coffee} size={88} />
         <View style={styles.coffeeText}>
           {coffee.albumNumber !== null ? (
             <Text variant="caption" color="textSecondary">
-              {t('friendsLog.newCard', { number: slotNumber(coffee.albumNumber) })}
+              {t(own ? 'friendsLog.own.newCard' : 'friendsLog.newCard', {
+                number: slotNumber(coffee.albumNumber),
+              })}
             </Text>
           ) : null}
           <Text variant="title" numberOfLines={2}>
@@ -170,24 +224,26 @@ function CoffeeDetails({ coffee }: { coffee: LoggedCoffee }) {
         </View>
       </View>
 
-      <View style={styles.table}>
-        {coffee.rating ? (
-          <View style={styles.tableRow}>
-            <Text variant="label" color="textSecondary">
-              {t('friendCoffee.rating')}
-            </Text>
-            <Stars rating={coffee.rating} size={18} />
-          </View>
-        ) : null}
-        {rows.map((row) => (
-          <View key={row.label} style={styles.tableRow}>
-            <Text variant="label" color="textSecondary">
-              {row.label}
-            </Text>
-            <Text variant="bodyStrong">{row.value}</Text>
-          </View>
-        ))}
-      </View>
+      {coffee.rating || rows.length > 0 ? (
+        <View style={styles.table}>
+          {coffee.rating ? (
+            <View style={styles.tableRow}>
+              <Text variant="label" color="textSecondary">
+                {t('friendCoffee.rating')}
+              </Text>
+              <Stars rating={coffee.rating} size={18} />
+            </View>
+          ) : null}
+          {rows.map((row) => (
+            <View key={row.label} style={styles.tableRow}>
+              <Text variant="label" color="textSecondary">
+                {row.label}
+              </Text>
+              <Text variant="bodyStrong">{row.value}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {coffee.notes ? (
         <View style={styles.note}>
@@ -197,10 +253,6 @@ function CoffeeDetails({ coffee }: { coffee: LoggedCoffee }) {
           <Text>{coffee.notes}</Text>
         </View>
       ) : null}
-
-      {!coffee.rating && rows.length === 0 && !coffee.notes ? (
-        <Text color="textSecondary">{t('friendCoffee.plain')}</Text>
-      ) : null}
     </View>
   );
 }
@@ -209,13 +261,16 @@ function CoffeeDetails({ coffee }: { coffee: LoggedCoffee }) {
 // way back to the list.
 function GroupSheet({
   group,
+  own,
   coffees,
   onClose,
 }: {
   group: LogGroup | null;
+  own: boolean;
   coffees: LoggedCoffee[];
   onClose: () => void;
 }) {
+  const { profile } = useProfile();
   const [pickedId, setPickedId] = useState<string | null>(null);
   // Read from the list, so a reload is shown.
   const shown = group ? coffees.filter((coffee) => group.coffees.some((item) => item.id === coffee.id)) : [];
@@ -245,29 +300,34 @@ function GroupSheet({
             <Avatar uri={group.person.avatarUrl} cacheKey={group.person.avatarPath} name={name} size={36} />
             <View style={styles.coffeeText}>
               <Text variant="bodyStrong" numberOfLines={1}>
-                {name}
+                {own ? t('feed.you') : name}
               </Text>
               <Text variant="caption" color="textSecondary">
                 {formatDate(group.coffees[0].consumedAt, 'day')}
               </Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                close();
-                router.push({ pathname: '/friends/[id]', params: { id: group.person.id } });
-              }}
-              hitSlop={spacing.sm}
-            >
-              <Text variant="label" color="textSecondary">
-                {t('friendsLog.profile')}
-              </Text>
-            </Pressable>
+            {own ? null : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  close();
+                  router.push({
+                    pathname: '/friends/[id]',
+                    params: { id: group.person.id },
+                  });
+                }}
+                hitSlop={spacing.sm}
+              >
+                <Text variant="label" color="textSecondary">
+                  {t('friendsLog.profile')}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {picked ? (
             <Animated.View key={picked.id} entering={FadeInRight.duration(220)}>
-              <CoffeeDetails coffee={picked} />
+              <CoffeeDetails coffee={picked} own={own} />
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInLeft.duration(220)}>
@@ -278,7 +338,7 @@ function GroupSheet({
           )}
 
           <Text variant="caption" color="textMuted">
-            {t('friendCoffee.privacy')}
+            {own ? t(profile.shareLogs ? 'friendsLog.share.on' : 'friendsLog.share.off') : t('friendCoffee.privacy')}
           </Text>
         </View>
       ) : null}
@@ -286,13 +346,17 @@ function GroupSheet({
   );
 }
 
-// Friends' coffees, newest first, a line per friend per day.
+// Friends' coffees and the user's own, newest first, a line per person per
+// day.
 export function FriendsLogList({
   groups,
   coffees,
+  me,
 }: {
   groups: LogGroup[];
   coffees: LoggedCoffee[];
+  // The user's id, so their own lines are drawn as theirs.
+  me: string | undefined;
 }) {
   const [openedKey, setOpenedKey] = useState<string | null>(null);
   // Looked up afresh, so a group gone after a reload closes its sheet.
@@ -305,10 +369,21 @@ export function FriendsLogList({
         <Text color="textSecondary">{t('friendsLog.empty')}</Text>
       ) : (
         groups.map((group, index) => (
-          <GroupRow key={group.key} group={group} last={index === groups.length - 1} onPress={() => setOpenedKey(group.key)} />
+          <GroupRow
+            key={group.key}
+            group={group}
+            own={group.person.id === me}
+            last={index === groups.length - 1}
+            onPress={() => setOpenedKey(group.key)}
+          />
         ))
       )}
-      <GroupSheet group={opened} coffees={coffees} onClose={() => setOpenedKey(null)} />
+      <GroupSheet
+        group={opened}
+        own={!!opened && opened.person.id === me}
+        coffees={coffees}
+        onClose={() => setOpenedKey(null)}
+      />
     </View>
   );
 }

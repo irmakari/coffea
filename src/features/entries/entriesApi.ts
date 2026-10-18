@@ -1,6 +1,14 @@
 import { supabase } from '@/lib/supabase';
 
-import { createPhotoLinks, finishUpload, isLocalPhoto, removeCoffeePhoto, type StoredPhoto } from './photoStorage';
+import {
+  createPhotoLinks,
+  finishUpload,
+  isLocalPhoto,
+  removeCoffeePhoto,
+  removePhoto,
+  uploadSticker,
+  type StoredPhoto,
+} from './photoStorage';
 import {
   asShots,
   asSize,
@@ -16,7 +24,7 @@ import {
 } from './types';
 
 const COLUMNS =
-  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, consumed_at, price, currency, rating, notes, is_favorite, size, shots, temperature, venue';
+  'id, coffee_name, coffee_type, milk, cafe_name, photo_path, photo_thumb_path, sticker_path, consumed_at, price, currency, rating, notes, is_favorite, size, shots, temperature, venue';
 
 type EntryRow = {
   id: string;
@@ -26,6 +34,7 @@ type EntryRow = {
   cafe_name: string | null;
   photo_path: string | null;
   photo_thumb_path: string | null;
+  sticker_path: string | null;
   consumed_at: string;
   price: number | string | null;
   currency: string | null;
@@ -48,6 +57,7 @@ function toEntry(row: EntryRow, photoUrl: string | null): Entry {
     photoPath: row.photo_path,
     photoUrl,
     photoThumbPath: row.photo_thumb_path,
+    stickerPath: row.sticker_path,
     consumedAt: row.consumed_at,
     // The API may send a decimal column as text; the app always works in numbers.
     price: row.price === null ? null : Number(row.price),
@@ -121,11 +131,17 @@ export async function fetchEntries(): Promise<Entry[]> {
 }
 
 function photoColumns(photo: StoredPhoto | null) {
-  return { photo_path: photo?.path ?? null, photo_thumb_path: photo?.thumbPath ?? null };
+  return {
+    photo_path: photo?.path ?? null,
+    photo_thumb_path: photo?.thumbPath ?? null,
+    sticker_path: photo?.stickerPath ?? null,
+  };
 }
 
 function storedPhoto(entry: Entry): StoredPhoto | null {
-  return entry.photoPath ? { path: entry.photoPath, thumbPath: entry.photoThumbPath } : null;
+  return entry.photoPath
+    ? { path: entry.photoPath, thumbPath: entry.photoThumbPath, stickerPath: entry.stickerPath }
+    : null;
 }
 
 export async function createEntry(userId: string, draft: EntryDraft): Promise<Entry> {
@@ -157,7 +173,9 @@ export async function updateEntry(userId: string, entry: Entry, draft: EntryDraf
 
   const { data, error } = await supabase
     .from('coffee_entries')
-    .update({ ...fieldsFromDraft(draft), ...photoColumns(photo) })
+    // The photo's columns are written only when it changed, so a sticker
+    // shared since the entry was loaded is kept.
+    .update({ ...fieldsFromDraft(draft), ...(photo !== previous ? photoColumns(photo) : {}) })
     .eq('id', entry.id)
     .select(COLUMNS)
     .single<EntryRow>();
@@ -169,6 +187,27 @@ export async function updateEntry(userId: string, entry: Entry, draft: EntryDraf
   if (previous && previous !== photo) await removeCoffeePhoto(previous);
   // Keep showing whatever the form was showing; it is the same picture.
   return withPhotoLink(data, draft.photoUri);
+}
+
+// Stores a coffee's sticker and notes it on the coffee, so friends see it in
+// their log. Resolves to where it is stored, or null when the coffee's photo
+// changed or a sticker was noted meanwhile, in which case it is not kept.
+export async function shareSticker(userId: string, entry: Entry, stickerUri: string): Promise<string | null> {
+  if (!entry.photoPath) return null;
+  const path = await uploadSticker(userId, stickerUri);
+  const { data, error } = await supabase
+    .from('coffee_entries')
+    .update({ sticker_path: path })
+    .eq('id', entry.id)
+    .eq('photo_path', entry.photoPath)
+    .is('sticker_path', null)
+    .select('id');
+  if (error || data.length === 0) {
+    await removePhoto(path);
+    if (error) throw error;
+    return null;
+  }
+  return path;
 }
 
 export async function setEntryFavorite(id: string, isFavorite: boolean): Promise<void> {
