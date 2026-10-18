@@ -13,6 +13,10 @@ const ABSORPTION = 0.75 * HOUR;
 // Below about this much, most people fall asleep as they would without any.
 export const SLEEP_LEVEL = 50;
 
+// Less than this is what is left of yesterday's cups, too little to feel,
+// so it counts as none.
+const TRACE_LEVEL = 10;
+
 // Coffees older than this have long since worn off.
 const LOOK_BACK = 30 * HOUR;
 
@@ -52,7 +56,8 @@ export function caffeineLevel(entries: Entry[]): CaffeineLevel | null {
   const now = Date.now();
   const doses = dosesOf(entries, now);
   if (doses.length === 0) return null;
-  const level = levelAt(doses, now);
+  const left = levelAt(doses, now);
+  const level = left < TRACE_LEVEL ? 0 : left;
 
   let clearAt: Date | null = null;
   if (level >= SLEEP_LEVEL) {

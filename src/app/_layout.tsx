@@ -12,6 +12,7 @@ import { CelebrationHost } from '@/features/celebrate/Celebration';
 import { BucketListProvider } from '@/features/bucketList/BucketListProvider';
 import { EntriesProvider } from '@/features/entries/EntriesProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
+import { useStickerSharing } from '@/features/friends/stickerSharing';
 import { ProfileProvider } from '@/features/profile/ProfileProvider';
 import { setUpNotifications, useStreakReminders } from '@/features/reminders/streakReminder';
 import { useTheme } from '@/features/theme/theme';
@@ -49,6 +50,7 @@ function RootNavigator() {
   const { session, loading } = useAuth();
   const theme = useTheme();
   useStreakReminders(session !== null);
+  useStickerSharing();
   // The splash screen stays up until we know which side of sign-in to show.
   const ready = (fontsLoaded || !!fontError) && !loading;
 

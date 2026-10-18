@@ -15,6 +15,8 @@ type EntriesState = {
   update: (entry: Entry, draft: EntryDraft) => Promise<Entry>;
   remove: (entry: Entry) => Promise<void>;
   toggleFavorite: (entry: Entry) => Promise<void>;
+  // Notes a sticker shared for a coffee's photo, unless the photo changed.
+  noteSticker: (id: string, photoPath: string, stickerPath: string) => void;
 };
 
 const EntriesContext = createContext<EntriesState | null>(null);
@@ -97,6 +99,12 @@ function EntriesStore({ userId, children }: { userId: string | null; children: R
         await deleteEntry(entry);
         setEntries((current) => current.filter((item) => item.id !== entry.id));
       },
+      noteSticker: (id, photoPath, stickerPath) =>
+        setEntries((current) =>
+          current.map((item) =>
+            item.id === id && item.photoPath === photoPath ? { ...item, stickerPath } : item,
+          ),
+        ),
       toggleFavorite: async (entry) => {
         const isFavorite = !entry.isFavorite;
         const apply = (value: boolean) =>

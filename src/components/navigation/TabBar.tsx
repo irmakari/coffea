@@ -13,7 +13,6 @@ import { DrinkArc, pointedAt } from '@/features/entries/DrinkArc';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { startLog } from '@/features/entries/logDraft';
 import { coffeeTypes } from '@/features/entries/types';
-import { QuickLogPicker } from '@/features/entries/QuickLogPicker';
 import { markQuickLogTipSeen, quickLogTipSeen } from '@/features/entries/quickLogTip';
 import { useTabCup } from '@/features/profile/tabCup';
 import { t, type TranslationKey } from '@/i18n';
@@ -60,8 +59,6 @@ export type TabBarProps = {
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const cup = useTabCup();
-  // A long press on the cup offers every coffee, drawn, to start a log from.
-  const [picking, setPicking] = useState(false);
   // Shown until the cup has been tapped or held once, or the tip itself.
   const [tip, setTip] = useState(() => !quickLogTipSeen());
   const dismissTip = () => {
@@ -72,12 +69,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const onLog = state.routes[state.index]?.name === LOG_ROUTE;
 
   // Holding the cup fans the drinks out over it. Dragging onto one and
-  // letting go starts a log of it; letting go without dragging opens the
-  // full list, as a plain long press always has.
+  // letting go starts a log of it; letting go anywhere else does nothing.
   const drinks = useArcDrinks();
   const arcOpen = useSharedValue(0);
   const pointed = useSharedValue(-1);
-  const travelled = useSharedValue(0);
   const [label, setLabel] = useState<string | null>(null);
   const point = (index: number) => {
     setLabel(index >= 0 ? coffeeName(drinks[index]) : null);
@@ -87,10 +82,9 @@ export function TabBar({ state, navigation }: TabBarProps) {
     dismissTip();
     tapFeedback();
   };
-  const release = (index: number, moved: number) => {
+  const release = (index: number) => {
     setLabel(null);
     if (index >= 0) startLog({ drink: drinks[index] });
-    else if (moved < 24) setPicking(true);
   };
   const logRoute = state.routes.find((route) => route.name === LOG_ROUTE);
   const openLog = () => {
@@ -104,12 +98,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
       .activateAfterLongPress(280)
       .onStart(() => {
         pointed.set(-1);
-        travelled.set(0);
         arcOpen.set(withSpring(1, { damping: 16, stiffness: 180 }));
         scheduleOnRN(hold);
       })
       .onUpdate((event) => {
-        travelled.set(Math.max(travelled.value, Math.hypot(event.translationX, event.translationY)));
         const index = pointedAt(event.translationX, event.translationY, drinks.length);
         if (index !== pointed.value) {
           pointed.set(index);
@@ -117,7 +109,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         }
       })
       .onEnd(() => {
-        scheduleOnRN(release, pointed.value, travelled.value);
+        scheduleOnRN(release, pointed.value);
       })
       .onFinalize(() => {
         arcOpen.set(withTiming(0, { duration: 180 }));
@@ -163,11 +155,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
                   accessibilityState={{ selected: focused }}
                   accessibilityLabel={t('tabs.log')}
                   accessibilityHint={t('quickLog.hint')}
-                  accessibilityActions={[{ name: 'activate' }, { name: 'longpress' }]}
-                  onAccessibilityAction={(event) => {
+                  accessibilityActions={[{ name: 'activate' }]}
+                  onAccessibilityAction={() => {
                     dismissTip();
-                    if (event.nativeEvent.actionName === 'longpress') setPicking(true);
-                    else onPress();
+                    onPress();
                   }}
                   style={[styles.item, styles.log]}
                 >
@@ -200,11 +191,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         })}
       </View>
 
-      <QuickLogPicker
-        visible={picking}
-        onClose={() => setPicking(false)}
-        onPick={(drink) => startLog({ drink }, () => setPicking(false))}
-      />
+
     </View>
   );
 }

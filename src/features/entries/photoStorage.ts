@@ -7,27 +7,38 @@ export function isLocalPhoto(uri: string | null): uri is string {
   return uri !== null && !uri.startsWith('http');
 }
 
-// Stores a picked photo in the user's own folder. `pickPhoto` has already
-// made it small. Resolves to the storage path that is saved on the entry.
-export async function uploadPhoto(userId: string, localUri: string): Promise<string> {
+async function upload(userId: string, localUri: string, name: string, contentType: string): Promise<string> {
   const file = await fetch(localUri);
   const body = await file.arrayBuffer();
 
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${name}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType });
   if (error) throw error;
   return path;
 }
 
-// A coffee's photo as stored. Older coffees may also have a smaller copy
-// made for the friends feed, which goes when the photo does.
+// Stores a picked photo in the user's own folder. `pickPhoto` has already
+// made it small. Resolves to the storage path that is saved on the entry.
+export function uploadPhoto(userId: string, localUri: string): Promise<string> {
+  return upload(userId, localUri, '.jpg', 'image/jpeg');
+}
+
+// Stores a coffee's sticker beside its photo, for friends to see.
+export function uploadSticker(userId: string, localUri: string): Promise<string> {
+  return upload(userId, localUri, '-sticker.png', 'image/png');
+}
+
+// A coffee's photo as stored, with its sticker once one was shared. Older
+// coffees may also have a smaller copy made for the friends feed. Both go
+// when the photo does.
 export type StoredPhoto = {
   path: string;
   thumbPath: string | null;
+  stickerPath: string | null;
 };
 
 async function uploadCoffeePhoto(userId: string, localUri: string): Promise<StoredPhoto> {
-  return { path: await uploadPhoto(userId, localUri), thumbPath: null };
+  return { path: await uploadPhoto(userId, localUri), thumbPath: null, stickerPath: null };
 }
 
 // Uploads begun the moment a photo was picked, by the file they came from.
@@ -73,11 +84,12 @@ export async function removePhoto(path: string): Promise<void> {
     .catch(() => {});
 }
 
-// A coffee's photo and its feed copy, together.
+// A coffee's photo, its feed copy and its sticker, together.
 export async function removeCoffeePhoto(photo: StoredPhoto): Promise<void> {
+  const paths = [photo.path, photo.thumbPath, photo.stickerPath].filter((path) => path !== null);
   await supabase.storage
     .from(BUCKET)
-    .remove(photo.thumbPath ? [photo.path, photo.thumbPath] : [photo.path])
+    .remove(paths)
     .catch(() => {});
 }
 

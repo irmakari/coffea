@@ -17,13 +17,12 @@ type PhotoFieldProps = {
   drink?: string | null;
 };
 
-export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
+// Picking a photo for the form: the camera or the library, with what went
+// wrong if it did. Shared by the field here and the log screen's header.
+export function usePhotoPicker(uri: string | null, onChange: (uri: string | null) => void) {
   const [failure, setFailure] = useState<TranslationKey | null>(null);
   // From opening the picker until the chosen photo is ready to show.
   const [busy, setBusy] = useState(false);
-  // The photo as the calendar will show it, once its sticker is made. Until
-  // then, and wherever none can be made, the photo itself.
-  const sticker = useSticker(uri, null);
 
   const pick = async (source: PhotoSource) => {
     setFailure(null);
@@ -46,6 +45,15 @@ export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
     if (busy) return;
     askPhotoSource(t(uri ? 'entry.photo.change' : 'entry.photo.add'), pick);
   };
+
+  return { busy, failure, choose };
+}
+
+export function PhotoField({ uri, onChange, drink }: PhotoFieldProps) {
+  const { busy, failure, choose } = usePhotoPicker(uri, onChange);
+  // The photo as the calendar will show it, once its sticker is made. Until
+  // then, and wherever none can be made, the photo itself.
+  const sticker = useSticker(uri, null);
 
   return (
     <View style={styles.container}>

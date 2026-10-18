@@ -136,9 +136,6 @@ function Details({ friend, item }: { friend: string; item: Activity }) {
                     <Text>{coffee.notes}</Text>
                   </View>
                 ) : null}
-                {!coffee?.rating && rows.length === 0 && !coffee?.notes ? (
-                  <Text color="textSecondary">{t('friendCoffee.plain')}</Text>
-                ) : null}
               </Animated.View>
             )}
 

@@ -152,9 +152,9 @@ export function computeStreak(entries: Entry[], now = new Date()): Streak {
   return { current: runEndingOn(loggedToday ? now : shiftDays(now, -1)), best, loggedToday };
 }
 
-// The last `count` days, oldest first, each with one coffee logged on it.
-// Expects the entries newest first.
-export function recentDays(entries: Entry[], count: number, now = new Date()): { date: Date; entry: Entry | null }[] {
+// This week, Monday to Sunday, each day with one coffee logged on it.
+// Days still to come are there too, empty. Expects the entries newest first.
+export function weekDays(entries: Entry[], now = new Date()): { date: Date; entry: Entry | null; today: boolean }[] {
   // Each day's newest coffee, unless an earlier one that day has a photo:
   // a picture of the day says more than a drawing of it.
   const newest = new Map<string, Entry>();
@@ -163,8 +163,12 @@ export function recentDays(entries: Entry[], count: number, now = new Date()): {
     const kept = newest.get(key);
     if (!kept || (!kept.photoUrl && entry.photoUrl)) newest.set(key, entry);
   }
-  return Array.from({ length: count }, (_, index) => {
-    const date = shiftDays(now, index - (count - 1));
-    return { date, entry: newest.get(dayKey(date)) ?? null };
+  // getDay counts from Sunday; the week here starts on Monday.
+  const monday = shiftDays(now, -((now.getDay() + 6) % 7));
+  const today = dayKey(now);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = shiftDays(monday, index);
+    const key = dayKey(date);
+    return { date, entry: newest.get(key) ?? null, today: key === today };
   });
 }

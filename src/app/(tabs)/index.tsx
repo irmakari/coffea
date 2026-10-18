@@ -26,7 +26,6 @@ import {
   EntryTile,
   TILE_WIDTH,
 } from "@/features/entries/EntryCard";
-import { PullBean } from "@/features/home/PullBean";
 import { TodayInvite } from "@/features/home/TodayInvite";
 import { CaffeineCard } from "@/features/stats/CaffeineCard";
 import { StreakCard } from "@/features/stats/StreakCard";
@@ -54,7 +53,6 @@ function greetingKey(hour: number): TranslationKey {
 
 // The tan block that opens the app: who, when, and the one thing to do.
 function Hero({ count }: { count: number }) {
-  const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const now = new Date();
   const greeting = t(greetingKey(now.getHours()));
@@ -63,7 +61,7 @@ function Hero({ count }: { count: number }) {
     // The page colour shows in the hero's rounded corners, in front of the
     // tan that lies behind the top of the page.
     <View style={styles.heroCorners}>
-      <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={styles.hero}>
         <View style={contentColumn}>
           <View style={styles.masthead}>
             <Text variant="subheading" color="heroText">
@@ -126,7 +124,8 @@ export default function HomeScreen() {
   useHeroStatusBar();
 
   // Once the hero has scrolled away, the strip behind the clock takes the
-  // page's colour, so no band of tan is left floating over the list.
+  // page's colour, so no band of tan is left floating over the list. The page
+  // starts below that strip.
   const heroHeight = useSharedValue(0);
   const scrollY = useSharedValue(0);
   const [pastHero, setPastHero] = useState(false);
@@ -134,9 +133,8 @@ export default function HomeScreen() {
     setPastHero(past);
     if (isDarkHero()) setStatusBarStyle(past && !isDarkTheme() ? "dark" : "light");
   };
-  const topInset = insets.top;
   useAnimatedReaction(
-    () => heroHeight.value > 0 && scrollY.value > heroHeight.value - topInset,
+    () => heroHeight.value > 0 && scrollY.value > heroHeight.value,
     (past, wasPast) => {
       if (wasPast !== null && past !== wasPast) scheduleOnRN(onPastHero, past);
     },
@@ -173,9 +171,11 @@ export default function HomeScreen() {
           It lies behind the list, so the refresh spinner shows on top of it. */}
       <View style={styles.backdrop} />
       <Animated.ScrollView
+        // Below the strip behind the clock, so the reload spinner turns in
+        // the gap the pull opens rather than behind the status bar.
+        style={{ marginTop: insets.top }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        // The hero is tan to the very top, behind the status bar.
         contentInsetAdjustmentBehavior="never"
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -183,12 +183,9 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            // Android's spinner drops in below the status bar. The iOS one
-            // has no room of its own up there; the hero stands in for it.
-            tintColor="transparent"
+            tintColor={colors.heroTextSecondary}
             colors={[colors.accent]}
             progressBackgroundColor={colors.surface}
-            progressViewOffset={insets.top}
           />
         }
       >
@@ -304,9 +301,6 @@ export default function HomeScreen() {
           </View>
         )}
       </Animated.ScrollView>
-      {/* iOS would spin behind the status bar, which the hero runs under,
-          so a bean in the gap the pull opens shows the reload instead. */}
-      <PullBean scrollY={scrollY} refreshing={refreshing} topInset={insets.top} />
       {/* Keeps the clock and battery readable once content scrolls beneath them. */}
       <View style={[styles.statusBar, pastHero && styles.statusBarPage, { height: insets.top }]} />
     </View>
@@ -348,6 +342,7 @@ const styles = themed(() => ({
   },
   hero: {
     paddingHorizontal: GUTTER,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
     backgroundColor: colors.hero,
     borderBottomLeftRadius: radii.frame + 6,

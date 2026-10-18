@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated, {
   Easing,
   FadeOut,
@@ -7,11 +7,14 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg';
 
+import { tapFeedback } from '@/lib/haptics';
 import { colors, palette, withAlpha } from '@/theme';
 
 export const JAR_WIDTH = 112;
@@ -29,6 +32,7 @@ export const JAR_CAPACITY = columns * rows;
 
 // The same scatter every time, so a bean never jumps when the jar redraws.
 function jitter(index: number, salt: number) {
+  'worklet';
   const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
   return value - Math.floor(value);
 }
@@ -57,7 +61,18 @@ function BeanShape() {
 }
 
 // One bean, dropped in from above the jar the first time it shows.
-function Bean({ index, order, drop }: { index: number; order: number; drop: boolean }) {
+function Bean({
+  index,
+  order,
+  drop,
+  toss,
+}: {
+  index: number;
+  order: number;
+  drop: boolean;
+  // Above 0 while the jar is being shaken: how high the beans are thrown.
+  toss: SharedValue<number>;
+}) {
   const place = places[index];
   const fall = useSharedValue(drop ? 1 : 0);
 
@@ -69,8 +84,10 @@ function Bean({ index, order, drop }: { index: number; order: number; drop: bool
   const style = useAnimatedStyle(() => ({
     opacity: fall.value > 0.98 ? 0 : 1,
     transform: [
-      { translateY: -fall.value * (place.y + BEAN_HEIGHT) },
-      { rotate: `${place.rotate + fall.value * 160}deg` },
+      // Shaken, the higher beans fly furthest, each its own way.
+      { translateX: toss.value * (jitter(index, 4) - 0.5) * 14 },
+      { translateY: -fall.value * (place.y + BEAN_HEIGHT) - toss.value * (8 + jitter(index, 5) * 22) },
+      { rotate: `${place.rotate + fall.value * 160 + toss.value * (jitter(index, 6) - 0.5) * 260}deg` },
     ],
   }));
 
@@ -116,12 +133,40 @@ export function BeanJar({ beans }: BeanJarProps) {
     );
   }, [count, shown, reduceMotion, sway]);
 
-  const jarStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value * 3}deg` }] }));
+  // A tap shakes the jar: it rocks, the beans jump and tumble, and they
+  // settle back into place with a rattle.
+  const toss = useSharedValue(0);
+  const rock = useSharedValue(0);
+  const shake = () => {
+    tapFeedback();
+    if (reduceMotion || count === 0) return;
+    rock.set(
+      withSequence(
+        withTiming(-1, { duration: 70 }),
+        withTiming(1, { duration: 110 }),
+        withTiming(-0.6, { duration: 100 }),
+        withSpring(0, { damping: 6, stiffness: 200 }),
+      ),
+    );
+    toss.set(
+      withSequence(
+        withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) }),
+        withSpring(0, { damping: 7, stiffness: 170, mass: 0.6 }),
+      ),
+    );
+    setTimeout(tapFeedback, 330);
+    setTimeout(tapFeedback, 430);
+  };
+
+  const jarStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${sway.value * 3 + rock.value * 7}deg` }, { translateY: -toss.value * 4 }],
+  }));
 
   const glass = withAlpha(colors.surface, 0.55);
   const rim = colors.borderStrong;
 
   return (
+    <Pressable onPress={shake} hitSlop={8}>
     <Animated.View style={[{ width: JAR_WIDTH, height: JAR_HEIGHT }, jarStyle]}>
       {/* The glass behind the beans. */}
       <Svg width={JAR_WIDTH} height={JAR_HEIGHT} style={{ position: 'absolute' }}>
@@ -138,7 +183,7 @@ export function BeanJar({ beans }: BeanJarProps) {
 
       <View style={{ position: 'absolute', width: JAR_WIDTH, height: JAR_HEIGHT }}>
         {Array.from({ length: count }, (_, index) => (
-          <Bean key={index} index={index} order={index - shown} drop={!reduceMotion && index >= shown} />
+          <Bean key={index} index={index} order={index - shown} drop={!reduceMotion && index >= shown} toss={toss} />
         ))}
       </View>
 
@@ -151,5 +196,6 @@ export function BeanJar({ beans }: BeanJarProps) {
         <Rect x={24} y={20} width={JAR_WIDTH - 48} height={2} fill={palette.darkRoast} opacity={0.35} />
       </Svg>
     </Animated.View>
+    </Pressable>
   );
 }

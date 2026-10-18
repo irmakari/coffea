@@ -1,8 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
-import { Screen, ScreenHeader } from '@/components/ui';
+import { Screen } from '@/components/ui';
 import { useEntries } from '@/features/entries/EntriesProvider';
 import { EntryForm } from '@/features/entries/EntryForm';
 import { isLogDraftDirty, setLogDraftDirty } from '@/features/entries/logDraft';
@@ -14,8 +13,8 @@ import { buildAlbum, collectedCount } from '@/features/album/album';
 import { revealNewCard } from '@/features/album/NewCardReveal';
 import { celebrate } from '@/features/celebrate/Celebration';
 import { computeStreak } from '@/features/stats/stats';
+import { useHeroStatusBar } from '@/features/theme/theme';
 import { formatNumber, t } from '@/i18n';
-import { spacing } from '@/theme';
 
 // A form that already knows what is being drunk, named after it so that it
 // can be saved as it stands.
@@ -55,6 +54,7 @@ export default function LogCoffeeScreen() {
   // A tab stays mounted, so the form is swapped for an empty one after each
   // save. Leaving the tab halfway keeps what was typed.
   const [formKey, setFormKey] = useState(0);
+  useHeroStatusBar();
 
   // Set when a coffee is picked from the tab bar's long-press menu, a day
   // from the diary, or a coffee ticked off the bucket list. `at` changes with
@@ -129,14 +129,11 @@ export default function LogCoffeeScreen() {
   };
 
   return (
-    <Screen padded={false}>
+    // The form's tan header runs up behind the status bar.
+    <Screen padded={false} edges={[]}>
       <EntryForm
         key={`${formKey}:${at ?? ''}`}
-        header={
-          <View style={styles.header}>
-            <ScreenHeader title={t('entry.newTitle')} />
-          </View>
-        }
+        heroTitle={t('entry.newTitle')}
         initialValues={initialValues}
         submitLabel={t('entry.save')}
         onSubmit={save}
@@ -148,10 +145,3 @@ export default function LogCoffeeScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  // Lines the title up with the other tabs, whose screens pad the top.
-  header: {
-    paddingTop: spacing.sm,
-  },
-});

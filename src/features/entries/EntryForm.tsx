@@ -11,6 +11,7 @@ import { colors, sizes, spacing, themed } from '@/theme';
 import { DateField } from './DateField';
 import { useEntries } from './EntriesProvider';
 import { hiddenCafes, hideCafe } from './hiddenCafes';
+import { LogHero } from './LogHero';
 import { MoreCoffeesSheet } from './MoreCoffeesSheet';
 import { PhotoField } from './PhotoField';
 import { cancelUpload, isLocalPhoto, startUpload } from './photoStorage';
@@ -39,6 +40,9 @@ type EntryFormProps = {
   error?: string | null;
   // Scrolls away with the fields, for screens without a header of their own.
   header?: ReactNode;
+  // Opens the form under a tan header with this title, the photo picked
+  // there, and the fields on a sheet rising over it.
+  heroTitle?: string;
   // On a tab the bar below already clears the bottom of the screen.
   aboveTabBar?: boolean;
   // Told whenever the form starts or stops differing from what it opened
@@ -121,6 +125,7 @@ export function EntryForm({
   submitting = false,
   error,
   header,
+  heroTitle,
   aboveTabBar = false,
   onDirtyChange,
 }: EntryFormProps) {
@@ -163,6 +168,7 @@ export function EntryForm({
   const typeName =
     draft.type === 'other' ? draft.customType : draft.type ? t(`coffeeTypes.${draft.type}`) : '';
   const name = draft.name.trim() || typeName;
+  const drink = draft.type === 'other' ? draft.customType || draft.type : draft.type;
   const cafes = useMemo(() => entries.map((entry) => entry.cafe), [entries]);
   const [hidden, setHidden] = useState(hiddenCafes);
   const suggestions = cafeSuggestions(cafes, draft.cafe, hidden);
@@ -185,216 +191,219 @@ export function EntryForm({
     <KeyboardAvoider>
       <ScrollView
         contentContainerStyle={[
-          styles.content,
+          !heroTitle && styles.content,
           { paddingBottom: aboveTabBar ? spacing.xl : Math.max(insets.bottom, spacing.lg) + spacing.sm },
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
+        // The tan header runs up behind the status bar.
+        contentInsetAdjustmentBehavior={heroTitle ? 'never' : undefined}
       >
-        {header}
-        <PhotoField
-          uri={draft.photoUri}
-          drink={draft.type === 'other' ? draft.customType || draft.type : draft.type}
-          onChange={changePhoto}
-        />
+        {heroTitle ? (
+          <LogHero title={heroTitle} name={name} uri={draft.photoUri} drink={drink} onChange={changePhoto} />
+        ) : null}
+        <View style={heroTitle ? styles.sheet : styles.fields}>
+          {header}
+          {heroTitle ? null : <PhotoField uri={draft.photoUri} drink={drink} onChange={changePhoto} />}
 
-        <TextField
-          label={t('entry.name.label')}
-          placeholder={typeName || t('entry.name.placeholder')}
-          value={draft.name}
-          onChangeText={(name) => update({ name })}
-          autoCapitalize="words"
-          returnKeyType="done"
-          maxLength={80}
-        />
+          <TextField
+            label={t('entry.name.label')}
+            placeholder={typeName || t('entry.name.placeholder')}
+            value={draft.name}
+            onChangeText={(name) => update({ name })}
+            autoCapitalize="words"
+            returnKeyType="done"
+            maxLength={80}
+          />
 
-        <View style={styles.group}>
-          <Text variant="label" color="textSecondary">
-            {t('entry.type.label')}
-          </Text>
-          <View style={styles.chips}>
-            {coffeeTypes.map((type) =>
-              type === 'other' ? (
-                // Opens the longer list, and afterwards carries what was picked.
-                <Chip
-                  key={type}
-                  label={(draft.type === 'other' && draft.customType) || t('coffeeTypes.other')}
-                  selected={draft.type === 'other'}
-                  onPress={() => setMoreOpen(true)}
-                />
-              ) : (
-                <Chip
-                  key={type}
-                  label={t(`coffeeTypes.${type}`)}
-                  selected={draft.type === type}
-                  onPress={() => update({ type: draft.type === type ? null : type })}
-                />
-              ),
-            )}
-          </View>
-        </View>
-
-        {takesMilk(draft.type) ? (
           <View style={styles.group}>
             <Text variant="label" color="textSecondary">
-              {t('entry.milk.label')}
+              {t('entry.type.label')}
             </Text>
             <View style={styles.chips}>
-              {milkTypes.map((milk) => (
-                <Chip
-                  key={milk}
-                  label={t(`milkTypes.${milk}`)}
-                  selected={draft.milk === milk}
-                  onPress={() => update({ milk: draft.milk === milk ? null : milk })}
-                />
-              ))}
+              {coffeeTypes.map((type) =>
+                type === 'other' ? (
+                  // Opens the longer list, and afterwards carries what was picked.
+                  <Chip
+                    key={type}
+                    label={(draft.type === 'other' && draft.customType) || t('coffeeTypes.other')}
+                    selected={draft.type === 'other'}
+                    onPress={() => setMoreOpen(true)}
+                  />
+                ) : (
+                  <Chip
+                    key={type}
+                    label={t(`coffeeTypes.${type}`)}
+                    selected={draft.type === type}
+                    onPress={() => update({ type: draft.type === type ? null : type })}
+                  />
+                ),
+              )}
             </View>
           </View>
-        ) : null}
 
-        <DateField
-          label={t('entry.date.label')}
-          value={draft.consumedAt ? new Date(draft.consumedAt) : new Date()}
-          onChange={(date) => update({ consumedAt: date.toISOString() })}
-        />
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: detailsOpen }}
-          onPress={() => setDetailsOpen((open) => !open)}
-          style={({ pressed }) => [styles.disclosure, pressed && styles.disclosurePressed]}
-        >
-          <Text variant="bodyStrong">{t(detailsOpen ? 'entry.details.hide' : 'entry.details.show')}</Text>
-          <Icon name={detailsOpen ? 'minus' : 'plus'} size={20} color="textSecondary" />
-        </Pressable>
-
-        {detailsOpen ? (
-          <>
-            {takesSize(draft.type) ? (
-              <ChoiceGroup
-                label={t('entry.size.label')}
-                options={servingSizes}
-                value={draft.size}
-                labelOf={(size) => t(`entry.size.${size}`)}
-                onChange={(size) => update({ size })}
-              />
-            ) : null}
-            {takesShots(draft.type) ? (
-              <ChoiceGroup
-                label={t('entry.shots.label')}
-                options={shotCounts}
-                value={draft.shots}
-                labelOf={(shots) => String(shots)}
-                onChange={(shots) => update({ shots })}
-              />
-            ) : null}
-            {takesTemperature(draft.type) ? (
-              <ChoiceGroup
-                label={t('entry.temperature.label')}
-                options={temperatures}
-                value={draft.temperature}
-                labelOf={(temperature) => t(`entry.temperature.${temperature}`)}
-                onChange={(temperature) => update({ temperature })}
-              />
-            ) : null}
-            <ChoiceGroup
-              label={t('entry.venue.label')}
-              options={venues}
-              value={draft.venue}
-              labelOf={(venue) => t(`entry.venue.${venue}`)}
-              onChange={(venue) => update({ venue })}
-            />
-            <TextField
-              label={t('entry.cafe.label')}
-              placeholder={t('entry.cafe.placeholder')}
-              value={draft.cafe}
-              onChangeText={(cafe) => update({ cafe })}
-              autoCapitalize="words"
-              maxLength={80}
-            />
-            {suggestions.length > 0 ? (
-              <View style={styles.suggestions}>
-                <View style={styles.chips}>
-                  {suggestions.map((cafe) => (
-                    <Chip
-                      key={cafe}
-                      label={cafe}
-                      selected={false}
-                      onPress={() => update({ cafe })}
-                      onLongPress={() => askToHide(cafe)}
-                      accessibilityHint={t('entry.cafe.hideHint')}
-                    />
-                  ))}
-                </View>
-                <Text variant="caption" color="textMuted">
-                  {t('entry.cafe.suggestionHint')}
-                </Text>
-              </View>
-            ) : null}
+          {takesMilk(draft.type) ? (
             <View style={styles.group}>
               <Text variant="label" color="textSecondary">
-                {t('entry.rating.label')}
+                {t('entry.milk.label')}
               </Text>
-              <RatingInput value={draft.rating} onChange={(rating) => update({ rating })} />
-            </View>
-            <TextField
-              label={t('entry.price.label')}
-              placeholder={t('entry.price.placeholder')}
-              value={draft.price}
-              onChangeText={(price) => update({ price })}
-              error={priceInvalid ? t('entry.price.invalid') : undefined}
-              suffix={currencyLabel(draft.currency)}
-              suffixLabel={`${t('entry.price.currency')}, ${draft.currency}`}
-              onSuffixPress={() => setCurrencyOpen((open) => !open)}
-              keyboardType="decimal-pad"
-              maxLength={10}
-            />
-            {/* For the one coffee paid for in another currency, as on a trip. */}
-            {currencyOpen ? (
-              <View style={styles.chips} accessibilityRole="radiogroup">
-                {currencies.map((code) => (
+              <View style={styles.chips}>
+                {milkTypes.map((milk) => (
                   <Chip
-                    key={code}
-                    label={currencyLabel(code)}
-                    selected={draft.currency === code}
-                    onPress={() => {
-                      update({ currency: code });
-                      setCurrencyOpen(false);
-                    }}
+                    key={milk}
+                    label={t(`milkTypes.${milk}`)}
+                    selected={draft.milk === milk}
+                    onPress={() => update({ milk: draft.milk === milk ? null : milk })}
                   />
                 ))}
               </View>
-            ) : null}
-            <TextField
-              label={t('entry.notes.label')}
-              placeholder={t('entry.notes.placeholder')}
-              value={draft.notes}
-              onChangeText={(notes) => update({ notes })}
-              multiline
-              maxLength={1000}
-            />
-          </>
-        ) : null}
+            </View>
+          ) : null}
 
-        {/* The last thing on the page, after the details, rather than pinned over it. */}
-        <View style={styles.footer}>
-          {error ? (
-            <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
-              {error}
-            </Text>
-          ) : null}
-          {name === '' ? (
-            <Text variant="small" color="textSecondary" align="center">
-              {t('entry.saveHint')}
-            </Text>
-          ) : null}
-          <Button
-            label={submitLabel}
-            disabled={!canSave}
-            loading={submitting}
-            onPress={() => onSubmit({ ...draft, name })}
+          <DateField
+            label={t('entry.date.label')}
+            value={draft.consumedAt ? new Date(draft.consumedAt) : new Date()}
+            onChange={(date) => update({ consumedAt: date.toISOString() })}
           />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: detailsOpen }}
+            onPress={() => setDetailsOpen((open) => !open)}
+            style={({ pressed }) => [styles.disclosure, pressed && styles.disclosurePressed]}
+          >
+            <Text variant="bodyStrong">{t(detailsOpen ? 'entry.details.hide' : 'entry.details.show')}</Text>
+            <Icon name={detailsOpen ? 'minus' : 'plus'} size={20} color="textSecondary" />
+          </Pressable>
+
+          {detailsOpen ? (
+            <>
+              {takesSize(draft.type) ? (
+                <ChoiceGroup
+                  label={t('entry.size.label')}
+                  options={servingSizes}
+                  value={draft.size}
+                  labelOf={(size) => t(`entry.size.${size}`)}
+                  onChange={(size) => update({ size })}
+                />
+              ) : null}
+              {takesShots(draft.type) ? (
+                <ChoiceGroup
+                  label={t('entry.shots.label')}
+                  options={shotCounts}
+                  value={draft.shots}
+                  labelOf={(shots) => String(shots)}
+                  onChange={(shots) => update({ shots })}
+                />
+              ) : null}
+              {takesTemperature(draft.type) ? (
+                <ChoiceGroup
+                  label={t('entry.temperature.label')}
+                  options={temperatures}
+                  value={draft.temperature}
+                  labelOf={(temperature) => t(`entry.temperature.${temperature}`)}
+                  onChange={(temperature) => update({ temperature })}
+                />
+              ) : null}
+              <ChoiceGroup
+                label={t('entry.venue.label')}
+                options={venues}
+                value={draft.venue}
+                labelOf={(venue) => t(`entry.venue.${venue}`)}
+                onChange={(venue) => update({ venue })}
+              />
+              <TextField
+                label={t('entry.cafe.label')}
+                placeholder={t('entry.cafe.placeholder')}
+                value={draft.cafe}
+                onChangeText={(cafe) => update({ cafe })}
+                autoCapitalize="words"
+                maxLength={80}
+              />
+              {suggestions.length > 0 ? (
+                <View style={styles.suggestions}>
+                  <View style={styles.chips}>
+                    {suggestions.map((cafe) => (
+                      <Chip
+                        key={cafe}
+                        label={cafe}
+                        selected={false}
+                        onPress={() => update({ cafe })}
+                        onLongPress={() => askToHide(cafe)}
+                        accessibilityHint={t('entry.cafe.hideHint')}
+                      />
+                    ))}
+                  </View>
+                  <Text variant="caption" color="textMuted">
+                    {t('entry.cafe.suggestionHint')}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={styles.group}>
+                <Text variant="label" color="textSecondary">
+                  {t('entry.rating.label')}
+                </Text>
+                <RatingInput value={draft.rating} onChange={(rating) => update({ rating })} />
+              </View>
+              <TextField
+                label={t('entry.price.label')}
+                placeholder={t('entry.price.placeholder')}
+                value={draft.price}
+                onChangeText={(price) => update({ price })}
+                error={priceInvalid ? t('entry.price.invalid') : undefined}
+                suffix={currencyLabel(draft.currency)}
+                suffixLabel={`${t('entry.price.currency')}, ${draft.currency}`}
+                onSuffixPress={() => setCurrencyOpen((open) => !open)}
+                keyboardType="decimal-pad"
+                maxLength={10}
+              />
+              {/* For the one coffee paid for in another currency, as on a trip. */}
+              {currencyOpen ? (
+                <View style={styles.chips} accessibilityRole="radiogroup">
+                  {currencies.map((code) => (
+                    <Chip
+                      key={code}
+                      label={currencyLabel(code)}
+                      selected={draft.currency === code}
+                      onPress={() => {
+                        update({ currency: code });
+                        setCurrencyOpen(false);
+                      }}
+                    />
+                  ))}
+                </View>
+              ) : null}
+              <TextField
+                label={t('entry.notes.label')}
+                placeholder={t('entry.notes.placeholder')}
+                value={draft.notes}
+                onChangeText={(notes) => update({ notes })}
+                multiline
+                maxLength={1000}
+              />
+            </>
+          ) : null}
+
+          {/* The last thing on the page, after the details, rather than pinned over it. */}
+          <View style={styles.footer}>
+            {error ? (
+              <Text variant="small" color="danger" align="center" accessibilityLiveRegion="polite">
+                {error}
+              </Text>
+            ) : null}
+            {name === '' ? (
+              <Text variant="small" color="textSecondary" align="center">
+                {t('entry.saveHint')}
+              </Text>
+            ) : null}
+            <Button
+              label={submitLabel}
+              disabled={!canSave}
+              loading={submitting}
+              onPress={() => onSubmit({ ...draft, name })}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -411,7 +420,6 @@ export function EntryForm({
           setMoreOpen(false);
         }}
       />
-
     </KeyboardAvoider>
   );
 }
@@ -420,7 +428,16 @@ const styles = themed(() => ({
   content: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
+  },
+  fields: {
     gap: spacing.xl,
+  },
+  // Carries on from the top of the sheet drawn by the header.
+  sheet: {
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.xl,
+    gap: spacing.xl,
+    backgroundColor: colors.sheet,
   },
   group: {
     gap: spacing.md,
