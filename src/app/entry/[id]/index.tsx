@@ -24,15 +24,18 @@ import { useSticker } from '@/features/entries/sticker';
 import { isMilkType, MAX_RATING, type Entry } from '@/features/entries/types';
 import { startLog } from '@/features/entries/logDraft';
 import { showActions } from '@/features/friends/actions';
+import { FortuneCard } from '@/features/fortune/FortuneCard';
 import { useHeroStatusBar } from '@/features/theme/theme';
 import { caffeineOf } from '@/features/stats/caffeine';
 import { formatCurrency, formatDate, formatNumber, t } from '@/i18n';
 import { tapFeedback } from '@/lib/haptics';
-import { colors, contentColumn, radii, sizes, spacing, themed } from '@/theme';
+import { colors, contentColumn, sizes, spacing, themed } from '@/theme';
 
-const VISUAL = 156;
-// How far the coffee reaches down over the white sheet.
-const OVERHANG = 44;
+const VISUAL = 184;
+// How much of the coffee stands on the tan; the rest reaches down over the
+// sheet, so the header stays short and the coffee large.
+const ABOVE = 56;
+const OVERHANG = VISUAL - ABOVE;
 
 // A bare icon on the tan header, with a full-size touch area.
 function HeaderButton({
@@ -284,11 +287,12 @@ export default function EntryScreen() {
               </View>
             </View>
 
+            {/* The name has the full width, so it is not wrapped round the coffee. */}
+            <Text variant="display" color="heroText" accessibilityRole="header" numberOfLines={3}>
+              {entry.name}
+            </Text>
             <View style={styles.heroBody}>
               <View style={styles.heroText}>
-                <Text variant="display" color="heroText" accessibilityRole="header" numberOfLines={3}>
-                  {entry.name}
-                </Text>
                 {kind ? <Text color="heroTextSecondary">{kind}</Text> : null}
                 {price ? (
                   <Text variant="heading" color="heroText" style={styles.price}>
@@ -307,20 +311,7 @@ export default function EntryScreen() {
           <View style={[contentColumn, styles.sheetInner]}>
             {/* A Turkish coffee leaves grounds to read. */}
             {entry.type === 'turkish' ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push({ pathname: '/fortune/[id]', params: { id: entry.id } })}
-                style={({ pressed }) => [styles.fortune, pressed && styles.pressed]}
-              >
-                <CupMark drink="turkish" size={52} />
-                <View style={styles.fortuneText}>
-                  <Text variant="subheading">{t('fortune.entry.title')}</Text>
-                  <Text variant="small" color="textSecondary">
-                    {t('fortune.entry.body')}
-                  </Text>
-                </View>
-                <Icon name="chevronRight" size={18} color="textMuted" />
-              </Pressable>
+              <FortuneCard onPress={() => router.push({ pathname: '/fortune/[id]', params: { id: entry.id } })} />
             ) : null}
             {sections.map((section, index) => (
               <Section key={section.key} label={section.label} last={index === sections.length - 1}>
@@ -348,20 +339,6 @@ export default function EntryScreen() {
 }
 
 const styles = themed(() => ({
-  fortune: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-    borderRadius: radii.frame,
-    backgroundColor: colors.surface,
-  },
-  fortuneText: {
-    flex: 1,
-    gap: 2,
-  },
   root: {
     flex: 1,
     backgroundColor: colors.sheet,
@@ -372,9 +349,10 @@ const styles = themed(() => ({
     paddingBottom: spacing.xl,
   },
   heroInner: {
-    gap: spacing.lg,
+    gap: spacing.xs,
   },
   topBar: {
+    marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -392,15 +370,17 @@ const styles = themed(() => ({
   pressed: {
     opacity: 0.6,
   },
+  // The kind and price sit just under the name; the coffee beside them
+  // reaches down onto the sheet.
   heroBody: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: spacing.md,
   },
   heroText: {
     flex: 1,
     gap: spacing.xs,
-    paddingBottom: OVERHANG,
+    paddingBottom: spacing.lg,
   },
   price: {
     marginTop: spacing.sm,
@@ -409,7 +389,7 @@ const styles = themed(() => ({
   visual: {
     width: VISUAL,
     height: VISUAL,
-    marginBottom: -OVERHANG - spacing.xl,
+    marginBottom: -OVERHANG,
     zIndex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -440,8 +420,9 @@ const styles = themed(() => ({
     borderCurve: 'continuous',
     backgroundColor: colors.sheet,
   },
+  // Starts below the coffee reaching down onto the sheet.
   sheetInner: {
-    paddingTop: OVERHANG - spacing.md,
+    paddingTop: OVERHANG - spacing.xl + spacing.sm,
   },
   section: {
     gap: spacing.xs,
