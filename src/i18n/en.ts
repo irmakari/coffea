@@ -476,7 +476,7 @@ export const en = {
         one: 'Your best so far: 1 day',
         other: 'Your best so far: {{count}} days',
       },
-      week: '{{count}} of the last 7 days',
+      week: '{{count}} of 7 days this week',
     },
   },
   wheel: {
@@ -853,6 +853,10 @@ export const en = {
   },
   entry: {
     newTitle: 'Log a coffee',
+    hero: {
+      untitled: 'A new coffee',
+      addHint: 'Tap the cup to add a photo',
+    },
     editTitle: 'Edit coffee',
     edit: 'Edit',
     moreActions: 'More',

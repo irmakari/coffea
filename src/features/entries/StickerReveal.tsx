@@ -49,12 +49,15 @@ type StickerRevealProps = {
   photoUri: string;
   // Undefined while being cut out, null where none can be made.
   sticker: string | null | undefined;
+  // Landscape fills the width of a form; round is the cup-sized disc on the
+  // log screen, whose photo falls away once the sticker is cut.
+  shape?: 'landscape' | 'round';
 };
 
 // A picked photo, and the coffee lifting out of it once its sticker is cut:
 // a light sweeps the photo while it is being made, then the photo sinks away
 // and the cut-out springs up off it with a tick.
-export function StickerReveal({ photoUri, sticker }: StickerRevealProps) {
+export function StickerReveal({ photoUri, sticker, shape = 'landscape' }: StickerRevealProps) {
   const reduceMotion = useReducedMotion();
   // Only a sticker made while this was on screen is revealed; one already
   // made simply shows.
@@ -119,9 +122,16 @@ export function StickerReveal({ photoUri, sticker }: StickerRevealProps) {
   }));
 
   return (
-    <View style={styles.frame} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-      <Animated.View style={[StyleSheet.absoluteFill, photoStyle]}>
-        <CoffeePhoto uri={photoUri} ratio="landscape" />
+    <View
+      style={shape === 'round' ? styles.roundFrame : styles.frame}
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+    >
+      <Animated.View style={[StyleSheet.absoluteFill, photoStyle, shape === 'round' && styles.print]}>
+        <CoffeePhoto
+          uri={photoUri}
+          ratio={shape === 'round' ? 'square' : 'landscape'}
+          style={shape === 'round' ? styles.printPhoto : undefined}
+        />
         {sticker === undefined ? (
           <Animated.View pointerEvents="none" style={[styles.sweep, sweepStyle]} />
         ) : null}
@@ -129,7 +139,10 @@ export function StickerReveal({ photoUri, sticker }: StickerRevealProps) {
       {sticker ? (
         <>
           <Animated.View pointerEvents="none" style={[styles.shadow, shadowStyle]} />
-          <Animated.View pointerEvents="none" style={[styles.sticker, stickerStyle]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[shape === 'round' ? styles.roundSticker : styles.sticker, stickerStyle]}
+          >
             <StickerImage uri={sticker} />
           </Animated.View>
         </>
@@ -145,6 +158,21 @@ const styles = themed(() => ({
     backgroundColor: colors.highlight,
     overflow: 'hidden',
   },
+  roundFrame: {
+    width: '100%',
+    aspectRatio: 1,
+  },
+  // The photo cut round with a white rim, like a saucer.
+  print: {
+    borderRadius: radii.pill,
+    borderWidth: 5,
+    borderColor: colors.surface,
+    backgroundColor: colors.highlight,
+    overflow: 'hidden',
+  },
+  printPhoto: {
+    borderRadius: 0,
+  },
   sweep: {
     position: 'absolute',
     top: '-40%',
@@ -158,6 +186,13 @@ const styles = themed(() => ({
     bottom: spacing.lg + 8,
     left: spacing.lg,
     right: spacing.lg,
+  },
+  roundSticker: {
+    position: 'absolute',
+    top: spacing.md,
+    bottom: spacing.lg,
+    left: spacing.md,
+    right: spacing.md,
   },
   shadow: {
     position: 'absolute',

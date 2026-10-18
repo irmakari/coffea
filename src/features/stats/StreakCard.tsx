@@ -8,9 +8,8 @@ import type { Entry } from '@/features/entries/types';
 import { formatDate, formatNumber, t } from '@/i18n';
 import { colors, radii, sizes, spacing, themed } from '@/theme';
 
-import { computeStreak, recentDays } from './stats';
+import { computeStreak, weekDays } from './stats';
 
-const DAYS_SHOWN = 7;
 const DAY_SIZE = 36;
 
 function plural(key: 'days' | 'best', count: number) {
@@ -39,12 +38,13 @@ function DayCoffee({ entry }: { entry: Entry }) {
   return <CupMark drink={entry.type} size={DAY_SIZE - 6} />;
 }
 
-// How many days in a row have a coffee, with the past week drawn out: each
-// day that has one shows the cup that was drunk.
+// How many days in a row have a coffee, with this week drawn out from
+// Monday: each day that has one shows the cup that was drunk.
 export function StreakCard({ entries }: { entries: Entry[] }) {
   const streak = useMemo(() => computeStreak(entries), [entries]);
-  const week = useMemo(() => recentDays(entries, DAYS_SHOWN), [entries]);
+  const week = useMemo(() => weekDays(entries), [entries]);
   const logged = week.filter((day) => day.entry).length;
+  const todayIndex = week.findIndex((day) => day.today);
 
   const note = streak.loggedToday
     ? plural('best', streak.best)
@@ -66,10 +66,10 @@ export function StreakCard({ entries }: { entries: Entry[] }) {
       </View>
 
       <View style={styles.week} accessible accessibilityLabel={t('stats.streak.week', { count: logged })}>
-        {week.map(({ date, entry }, index) => {
-          const today = index === week.length - 1;
+        {week.map(({ date, entry, today }, index) => {
           return (
-            <View key={date.getTime()} style={styles.day}>
+            // Days still to come are drawn faintly, apart from the ones missed.
+            <View key={date.getTime()} style={[styles.day, index > todayIndex && styles.dayAhead]}>
               <Text variant="caption" color={today ? 'text' : 'textMuted'}>
                 {formatDate(date, 'weekdayInitial')}
               </Text>
@@ -98,6 +98,9 @@ const styles = themed(() => ({
     flex: 1,
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  dayAhead: {
+    opacity: 0.45,
   },
   mark: {
     width: DAY_SIZE,
